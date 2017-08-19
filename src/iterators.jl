@@ -52,17 +52,17 @@ julia> begin
 """
 julienne_iterator(array, julienne_code) = JulienneIterator(indices(array), julienne_code)
 
-struct IteratedArray{ArrayType, IteratorType}
+struct ReiteratedArray{ArrayType, IteratorType}
     array::ArrayType
     iterator::IteratorType
 end
 
-inner_iterator(a::IteratedArray) = a.iterator
+inner_iterator(a::ReiteratedArray) = a.iterator
 
-Base.map(f, i::IteratedArray) = Base.Generator(f, i)
-Base.broadcast(f, i::IteratedArray) = Base.Generator(f, i)
+Base.map(f, i::ReiteratedArray) = Base.Generator(f, i)
+Base.broadcast(f, i::ReiteratedArray) = Base.Generator(f, i)
 
-@iterator_wrapper IteratedArray (a, index) -> @view a.array[index...]
+@iterator_wrapper ReiteratedArray (a, index) -> @view a.array[index...]
 
 export julienne
 """
@@ -88,4 +88,4 @@ julia> begin
  [7, 8, 9]
 ```
 """
-julienne(array, julienne_code) = IteratedArray(array, julienne_iterator(array, julienne_code))
+julienne(array, julienne_code) = ReiteratedArray(array, julienne_iterator(array, julienne_code))

@@ -4,7 +4,7 @@ maybe_wrap(any) = [any]
 
 export combine
 
-combine(j::IteratedArray) = j.array
+combine(j::ReiteratedArray) = j.array
 
 """
     combine(array)
@@ -29,12 +29,12 @@ julia> begin
  6  15  24
 ```
 """
-function combine(g::Base.Generator{T1} where T1 <: (IteratedArray{T2, T3} where T3 <: JulienneIterator where T2) )
-    iterated_array = g.iter
-    input_iterator = inner_iterator(iterated_array)
+function combine(g::Base.Generator{T1} where T1 <: (ReiteratedArray{T2, T3} where T3 <: JulienneIterator where T2) )
+    reiterated_array = g.iter
+    input_iterator = inner_iterator(reiterated_array)
     first_return = maybe_wrap(first(g))
     result = similar(first_return, set_fill_index(
-        indices(iterated_array.array),
+        indices(reiterated_array.array),
         indices(first_return),
         not.(is_iterated.(input_iterator.julienne_code)),
         Base.OneTo(1)

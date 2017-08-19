@@ -9,6 +9,5 @@ Documenter.makedocs(
     pages = Any["Home" => "index.md"],
     strict = true,
     linkcheck = true,
-    checkdocs = :exports,
     authors = "Brandon Taylor"
 )
