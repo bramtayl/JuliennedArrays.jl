@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "JuliennedArrays.julienne",
     "category": "Method",
-    "text": "julienne(array, julienne_code)\n\nChange atype between ViewingReiteratedArray and IndexingReiteratedArray\n\njulia> using JuliennedArrays\n\njulia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)\n3×3 Array{Int64,2}:\n 1  3  2\n 5  6  4\n 7  9  8\n\njulia> begin\n            foreach(sort!, julienne(array, (*, :)))\n            array\n        end\n3×3 Array{Int64,2}:\n 1  2  3\n 4  5  6\n 7  8  9\n\n\n\n"
+    "text": "julienne(array, julienne_code)\n\nThe julienne_code is made up of * and :. It should be the same length of the dimensions of your array.\n\njulia> using JuliennedArrays\n\njulia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)\n3×3 Array{Int64,2}:\n 1  3  2\n 5  6  4\n 7  9  8\n\njulia> begin\n            foreach(sort!, julienne(array, (*, :)))\n            array\n        end\n3×3 Array{Int64,2}:\n 1  2  3\n 4  5  6\n 7  8  9\n\n\n\n"
 },
 
 {
