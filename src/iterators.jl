@@ -46,7 +46,8 @@ export julienne
 """
     julienne(array, julienne_code)
 
-Change `atype` between ViewingReiteratedArray and IndexingReiteratedArray
+The `julienne_code` is made up of `*` and `:`. It should be the same length of the
+dimensions of your array.
 
 ```jldoctest
 julia> using JuliennedArrays
