@@ -1,5 +1,3 @@
-import Base.tail
-
 macro iterator_wrapper(atype, afunction)
     quote
         $Base.start(a::$atype) = $start($inner_iterator(a))
@@ -24,33 +22,14 @@ inner_iterator(j::JulienneIterator) = CartesianRange(get_index(j.old_indices, is
 end
 
 export julienne_iterator
-"""
-    julienne_iterator(array, julienne_code)
 
-`julienne_code` should be a tuple of either `*` (for dimensions to be sliced
-over) or `:` for dimenisons to be sliced across. See the example below for
-clarification.
-
-```jldoctest
-julia> using JuliennedArrays
-
-julia> array = reshape(1:9, 3, 3)
-3×3 Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}}:
- 1  4  7
- 2  5  8
- 3  6  9
-
-julia> begin
-            iterator = julienne_iterator(array, (:, *))
-            map(identity, iterator)
-        end
-3-element Array{Tuple{Base.OneTo{Int64},Int64},1}:
- (Base.OneTo(3), 1)
- (Base.OneTo(3), 2)
- (Base.OneTo(3), 3)
-```
-"""
 julienne_iterator(array, julienne_code) = JulienneIterator(indices(array), julienne_code)
+
+dropped_range(array, julienne_code) =
+    fill_index(indices(array), 1, not.(is_iterated.(julienne_code)))
+
+dropping_julienne_iterator(array, julienne_code) =
+    JulienneIterator(dropped_range(array, julienne_code), julienne_code)
 
 struct ReiteratedArray{ArrayType, IteratorType}
     array::ArrayType
@@ -59,33 +38,34 @@ end
 
 inner_iterator(a::ReiteratedArray) = a.iterator
 
-Base.map(f, i::ReiteratedArray) = Base.Generator(f, i)
-Base.broadcast(f, i::ReiteratedArray) = Base.Generator(f, i)
-
-@iterator_wrapper ReiteratedArray (a, index) -> @view a.array[index...]
+@iterator_wrapper ReiteratedArray function (r, index)
+    @view r.array[index...]
+end
 
 export julienne
 """
     julienne(array, julienne_code)
 
+Change `atype` between ViewingReiteratedArray and IndexingReiteratedArray
+
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> array = reshape(1:9, 3, 3)
-3×3 Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}}:
- 1  4  7
- 2  5  8
- 3  6  9
+julia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)
+3×3 Array{Int64,2}:
+ 1  3  2
+ 5  6  4
+ 7  9  8
 
 julia> begin
-            julienned = julienne(array, (:, *))
-            mapped = map(identity, julienned)
-            collect(mapped)
+            foreach(sort!, julienne(array, (*, :)))
+            array
         end
-3-element Array{SubArray{Int64,1,Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64},true},1}:
- [1, 2, 3]
- [4, 5, 6]
- [7, 8, 9]
+3×3 Array{Int64,2}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
 ```
 """
-julienne(array, julienne_code) = ReiteratedArray(array, julienne_iterator(array, julienne_code))
+julienne(array, julienne_code) =
+    ReiteratedArray(array, julienne_iterator(array, julienne_code))
