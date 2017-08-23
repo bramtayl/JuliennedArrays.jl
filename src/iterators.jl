@@ -16,8 +16,8 @@ JulienneIterator(indexes, iterated) =
         typeof(iterated)}(indexes, iterated)
 
 struct ReiteratedArray{T, N, A, I} <: AbstractArray{T, N}
-        array::A
-        iterator::I
+    array::A
+    iterator::I
 end
 
 Base.indices(r::ReiteratedArray) = indices(r.iterator)

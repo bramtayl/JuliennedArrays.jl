@@ -96,7 +96,7 @@ julia> map(mean, julienne(array, (:, *)))
 """
 Base.map(f, r::ReiteratedArray) = Base.map(optimization(f), r)
 
-Base.map(f::FunctionOptimization, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
+Base.map(f::FunctionOptimization, r::ReiteratedArray) =
     map_template(f.f, r, map_make, map_update)
 
 Base.map(f::Reduction, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
