@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "JuliennedArrays.julienne",
     "category": "Method",
-    "text": "julienne(array, julienne_code)\n\nThe julienne_code is made up of * and :. It should be the same length of the dimensions of your array.\n\njulia> using JuliennedArrays\n\njulia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)\n3×3 Array{Int64,2}:\n 1  3  2\n 5  6  4\n 7  9  8\n\njulia> begin\n            foreach(sort!, julienne(array, (*, :)))\n            array\n        end\n3×3 Array{Int64,2}:\n 1  2  3\n 4  5  6\n 7  8  9\n\n\n\n"
+    "text": "julienne(array, julienne_code)\n\nCreate a view of an array which will return slices. The julienne code should a tuple of length ndims(array), where : indicates an axis parallel to slices and * indices an axis perpendicular to slices.\n\njulia> using JuliennedArrays\n\njulia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)\n3×3 Array{Int64,2}:\n 1  3  2\n 5  6  4\n 7  9  8\n\njulia> foreach(sort!, julienne(array, (*, :)));\n\njulia> array\n3×3 Array{Int64,2}:\n 1  2  3\n 4  5  6\n 7  8  9\n\n\n\n"
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Base.map",
     "category": "Method",
-    "text": "Base.map(r::ReiteratedArray)\n\njulia> using JuliennedArrays\n\njulia> array = reshape(1:9, 3, 3)\n3×3 Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}}:\n 1  4  7\n 2  5  8\n 3  6  9\n\njulia> map(sum, julienne(array, (:, *)))\n1×3 Array{Int64,2}:\n 6  15  24\n\n\n\n"
+    "text": "Base.map(r::ReiteratedArray)\n\njulia> using JuliennedArrays\n\njulia> array = reshape(1:9, 3, 3)\n3×3 Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}}:\n 1  4  7\n 2  5  8\n 3  6  9\n\njulia> map(sum, julienne(array, (:, *)))\n1×3 Array{Int64,2}:\n 6  15  24\n\njulia> map(median, julienne(array, (:, *)))\n1×3 Array{Float64,2}:\n 2.0  5.0  8.0\n\njulia> map(mean, julienne(array, (:, *)))\n1×3 Array{Float64,2}:\n 2.0  5.0  8.0\n\n\n\n"
 },
 
 {
