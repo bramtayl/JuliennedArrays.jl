@@ -1,4 +1,3 @@
-using JuliennedArrays
 using BenchmarkTools
 
 const array = reshape(1:9, 3, 3)

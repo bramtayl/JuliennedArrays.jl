@@ -7,23 +7,23 @@ optimization(first_input::StridedArray, first_output::AbstractArray{T} where T <
 
 map_make(input_iterator::JulienneIterator, first_output) = begin
     iterated = input_iterator.iterated
-    output_indices = fill_index(input_iterator.indices, 1, not.(iterated))
-    output = similar(Array{typeof(first_output)}, output_indices...)
-    output_iterator = JulienneIterator(output_indices, iterated)
+    output_indexes = fill_index(input_iterator.indexes, 1, not.(iterated))
+    output = similar(Array{typeof(first_output)}, output_indexes...)
+    output_iterator = JulienneIterator(output_indexes, iterated)
     @inbounds output[first(output_iterator)...] = first_output
     output, output_iterator
 end
 
 combine_make(input_iterator::JulienneIterator, first_output) = begin
     iterated = input_iterator.iterated
-    output_indices = set_fill_index(
-        input_iterator.indices,
+    output_indexes = set_fill_index(
+        input_iterator.indexes,
         indices(first_output),
         not.(iterated),
         Base.OneTo(1)
     )
-    output = similar(first_output, output_indices...)
-    output_iterator = JulienneIterator(output_indices, iterated)
+    output = similar(first_output, output_indexes...)
+    output_iterator = JulienneIterator(output_indexes, iterated)
     @inbounds output[first(output_iterator)...] .= first_output
     output, output_iterator
 end
@@ -43,7 +43,7 @@ function map_template(f, r, make, update)
     maybe_swap = optimization(first_input, first_output)
 
     output, output_iterator = make(input_iterator, first_output)
-    for index in Iterators.Drop(input_iterator.iterator, 1)
+    for index in Iterators.Drop(input_iterator, 1)
         an_output = f(maybe_swap(input, first(next(input_iterator, index)), first_input))
         @inbounds update(output, an_output, first(next(output_iterator, index)))
     end
