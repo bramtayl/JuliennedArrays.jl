@@ -11,8 +11,8 @@ JulienneIterator(indexes, iterated) =
     JulienneIterator{
         typeof(fill_index(indexes, 1, iterated)),
         length(get_index(indexes, iterated)),
-        typeof(Indexes),
-        typeof(Iterated)}(indexes, iterated)
+        typeof(indexes),
+        typeof(iterated)}(indexes, iterated)
 
 struct ReiteratedArray{T, N, A, I} <: AbstractArray{T, N}
         array::A
@@ -30,3 +30,6 @@ ReiteratedArray(array::A, iterator::I) where {A, I} =
         SubArray{eltype(array), ndims(iterator), typeof(array), eltype(iterator),
             isa(IndexStyle(Base.viewindexing(first(iterator)), IndexStyle(array)), IndexLinear)},
             ndims(iterator), A, I}(array, iterator)
+
+julienne(array, julienne_code) =
+    ReiteratedArray(array, JulienneIterator(indices(array), is_iterated.(julienne_code)))

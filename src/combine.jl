@@ -69,6 +69,20 @@ julia> map(sum, julienne(array, (:, *)))
 """
 Base.map(f, r::ReiteratedArray) = map_template(f, r, map_make, map_update)
 
+# hook into mapreducedim under special circumstances
+const ReducingFunction = Union{typeof(sum), typeof(prod), typeof(minimum),
+    typeof(maximum), typeof(all), typeof(any)}
+
+inner_reduction(::typeof(sum)) = +
+inner_reduction(::typeof(prod)) = *
+inner_reduction(::typeof(maximum)) = scalarmax
+inner_reduction(::typeof(minimum)) = scalarmin
+inner_reduction(::typeof(all)) = &
+inner_reduction(::typeof(any)) = |
+
+Base.map(f::F, r::ReiteratedArray{T, N, A, I}) where {F <: ReducingFunction, T, N, A, I <: JulienneIterator} =
+    mapreducedim(identity, inner_reduction(f), r.array, drop_tuple(find_tuple(not.(r.iterator.iterated))))
+
 export combine
 """
     combine(pieces)

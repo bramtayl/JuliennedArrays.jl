@@ -1,5 +1,16 @@
 import Base.tail
 
+find_tuple(t) = find_tuple(t, 1)
+find_tuple(t, n) = begin
+    next = find_tuple(tail(t), n + 1)
+    if_else(first(t), next, (n, next...))
+end
+find_tuple(t::Tuple{}, n) = ()
+
+drop_tuple(t::Tuple{A}) where A = first(t)
+drop_tuple(t) = t
+
+
 not(::Val{false}) = Val{true}()
 not(::Val{true}) = Val{false}()
 
