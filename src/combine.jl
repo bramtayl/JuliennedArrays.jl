@@ -1,50 +1,49 @@
-none(array, index, swap) = array[index...]
-swap!(array, index, swap) = Base._unsafe_getindex!(swap, array, index...)
+Base.@propagate_inbounds none(array, index, swap) = array[index...]
+Base.@propagate_inbounds swap!(array, index, swap) = Base._unsafe_getindex!(swap, array, index...)
 
 optimization(first_input, first_output) = none
 optimization(first_input::StridedArray, first_output::Number) = swap!
 optimization(first_input::StridedArray, first_output::AbstractArray{T} where T <: Number) = swap!
 
-map_make(input_iterator::JulienneIterator, input, first_output) = begin
-    julienne_code = input_iterator.julienne_code
-    output = similar(Array{typeof(first_output)},
-        dropped_range(input, julienne_code)...)
-    output_iterator = dropping_julienne_iterator(output, julienne_code)
+map_make(input_iterator::JulienneIterator, first_output) = begin
+    iterated = input_iterator.iterated
+    output_indices = fill_index(input_iterator.indices, 1, not.(iterated))
+    output = similar(Array{typeof(first_output)}, output_indices...)
+    output_iterator = JulienneIterator(output_indices, iterated)
     @inbounds output[first(output_iterator)...] = first_output
     output, output_iterator
 end
 
-combine_make(input_iterator::JulienneIterator, input, first_output) = begin
-    julienne_code = input_iterator.julienne_code
-    output = similar(first_output, set_fill_index(
-        indices(input),
+combine_make(input_iterator::JulienneIterator, first_output) = begin
+    iterated = input_iterator.iterated
+    output_indices = set_fill_index(
+        input_iterator.indices,
         indices(first_output),
-        not.(is_iterated.(julienne_code)),
+        not.(iterated),
         Base.OneTo(1)
-    )...)
-    output_iterator = julienne_iterator(output, julienne_code)
+    )
+    output = similar(first_output, output_indices...)
+    output_iterator = JulienneIterator(output_indices, iterated)
     @inbounds output[first(output_iterator)...] .= first_output
     output, output_iterator
 end
 
-map_update(array, update, index) =
+Base.@propagate_inbounds map_update(array, update, index) =
     array[index...] = update
 
-@inline combine_update(array, update, index) =
+Base.@propagate_inbounds combine_update(array, update, index) =
     array[index...] .= update
 
 function map_template(f, r, make, update)
-    input_iterator = inner_iterator(r)
+    input_iterator = r.iterator
     input = r.array
-    julienne_code = input_iterator.julienne_code
 
     first_input = input[first(input_iterator)...]
     first_output = f(first_input)
     maybe_swap = optimization(first_input, first_output)
 
-    output, output_iterator = make(input_iterator, input, first_output)
-    index = first(Iterators.Drop(inner_iterator(input_iterator), 1))
-    for index in Iterators.Drop(inner_iterator(input_iterator), 1)
+    output, output_iterator = make(input_iterator, first_output)
+    for index in Iterators.Drop(input_iterator.iterator, 1)
         an_output = f(maybe_swap(input, first(next(input_iterator, index)), first_input))
         @inbounds update(output, an_output, first(next(output_iterator, index)))
     end
@@ -92,4 +91,5 @@ julia> combine(Base.Generator(sort, julienne(array, (*, :))))
  7  8  9
 ```
 """
-combine(g::Base.Generator{T} where T <: ReiteratedArray) = map_template(g.f, g.iter, combine_make, combine_update)
+combine(g::Base.Generator{T} where T <: ReiteratedArray) =
+    map_template(g.f, g.iter, combine_make, combine_update)
