@@ -1,9 +1,9 @@
 Base.@propagate_inbounds none(array, index, swap) = array[index...]
 Base.@propagate_inbounds swap!(array, index, swap) = Base._unsafe_getindex!(swap, array, index...)
 
-optimization(first_input, first_output) = none
-optimization(first_input::StridedArray, first_output::Number) = swap!
-optimization(first_input::StridedArray, first_output::AbstractArray{T} where T <: Number) = swap!
+is_swappable(first_input, first_output) = none
+is_swappable(first_input::StridedArray, first_output::Number) = swap!
+is_swappable(first_input::StridedArray, first_output::AbstractArray{T} where T <: Number) = swap!
 
 map_make(input_iterator::JulienneIterator, first_output) = begin
     iterated = input_iterator.iterated
@@ -40,7 +40,7 @@ function map_template(f, r, make, update)
 
     first_input = input[first(input_iterator)...]
     first_output = f(first_input)
-    maybe_swap = optimization(first_input, first_output)
+    maybe_swap = is_swappable(first_input, first_output)
 
     output, output_iterator = make(input_iterator, first_output)
     for index in Iterators.Drop(input_iterator, 1)
@@ -49,6 +49,25 @@ function map_template(f, r, make, update)
     end
     output
 end
+
+abstract type FunctionOptimization end
+struct None{F} <: FunctionOptimization; f::F; end
+struct Reduction{F} <: FunctionOptimization; f::F; end
+struct OutOfPlaceArray{F} <: FunctionOptimization; f::F; end
+optimization(f) = None(f)
+optimization(::typeof(median)) = None(median!)
+optimization(::typeof(sum)) = Reduction(+)
+optimization(::typeof(prod)) = Reduction(*)
+optimization(::typeof(maximum)) = Reduction(scalarmax)
+optimization(::typeof(minimum)) = Reduction(scalarmin)
+optimization(::typeof(all)) = Reduction(&)
+optimization(::typeof(any)) = Reduction(|)
+optimization(::typeof(mean)) = OutOfPlaceArray(mean!)
+
+# TODO: varm, var, std
+
+colon_dimensions(r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
+    find_tuple(not.(r.iterator.iterated))
 
 """
     Base.map(r::ReiteratedArray)
@@ -65,23 +84,28 @@ julia> array = reshape(1:9, 3, 3)
 julia> map(sum, julienne(array, (:, *)))
 1×3 Array{Int64,2}:
  6  15  24
+
+julia> map(median, julienne(array, (:, *)))
+1×3 Array{Float64,2}:
+ 2.0  5.0  8.0
+
+julia> map(mean, julienne(array, (:, *)))
+1×3 Array{Float64,2}:
+ 2.0  5.0  8.0
 ```
 """
-Base.map(f, r::ReiteratedArray) = map_template(f, r, map_make, map_update)
+Base.map(f, r::ReiteratedArray) = Base.map(optimization(f), r)
 
-# hook into mapreducedim under special circumstances
-const ReducingFunction = Union{typeof(sum), typeof(prod), typeof(minimum),
-    typeof(maximum), typeof(all), typeof(any)}
+Base.map(f::FunctionOptimization, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
+    map_template(f.f, r, map_make, map_update)
 
-inner_reduction(::typeof(sum)) = +
-inner_reduction(::typeof(prod)) = *
-inner_reduction(::typeof(maximum)) = scalarmax
-inner_reduction(::typeof(minimum)) = scalarmin
-inner_reduction(::typeof(all)) = &
-inner_reduction(::typeof(any)) = |
+Base.map(f::Reduction, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
+    mapreducedim(identity, f.f, r.array, colon_dimensions(r))
 
-Base.map(f::F, r::ReiteratedArray{T, N, A, I}) where {F <: ReducingFunction, T, N, A, I <: JulienneIterator} =
-    mapreducedim(identity, inner_reduction(f), r.array, drop_tuple(find_tuple(not.(r.iterator.iterated))))
+Base.map(f::OutOfPlaceArray, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} = begin
+    array = r.array
+    f.f(Base.reducedim_initarray(array, colon_dimensions(r), 0, Base.momenttype(eltype(array))), array)
+end
 
 export combine
 """
