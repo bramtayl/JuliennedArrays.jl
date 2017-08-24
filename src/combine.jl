@@ -5,27 +5,27 @@ is_swappable(first_input, first_output) = none
 is_swappable(first_input::StridedArray, first_output::Number) = swap!
 is_swappable(first_input::StridedArray, first_output::AbstractArray{T} where T <: Number) = swap!
 
-map_make(input_iterator::JulienneIterator, first_output) = begin
-    iterated = input_iterator.iterated
-    output_indexes = fill_index(input_iterator.indexes, 1, not.(iterated))
+map_make(input_indexer::JulienneIndexer, first_output) = begin
+    indexed = input_indexer.indexed
+    output_indexes = fill_index(input_indexer.indexes, 1, not.(indexed))
     output = similar(Array{typeof(first_output)}, output_indexes...)
-    output_iterator = JulienneIterator(output_indexes, iterated)
-    @inbounds output[first(output_iterator)...] = first_output
-    output, output_iterator
+    output_indexer = JulienneIndexer(output_indexes, indexed)
+    @inbounds output[first(output_indexer)...] = first_output
+    output, output_indexer
 end
 
-combine_make(input_iterator::JulienneIterator, first_output) = begin
-    iterated = input_iterator.iterated
+combine_make(input_indexer::JulienneIndexer, first_output) = begin
+    indexed = input_indexer.indexed
     output_indexes = set_fill_index(
-        input_iterator.indexes,
+        input_indexer.indexes,
         indices(first_output),
-        not.(iterated),
+        not.(indexed),
         Base.OneTo(1)
     )
     output = similar(first_output, output_indexes...)
-    output_iterator = JulienneIterator(output_indexes, iterated)
-    @inbounds output[first(output_iterator)...] .= first_output
-    output, output_iterator
+    output_indexer = JulienneIndexer(output_indexes, indexed)
+    @inbounds output[first(output_indexer)...] .= first_output
+    output, output_indexer
 end
 
 Base.@propagate_inbounds map_update(array, update, index) =
@@ -35,17 +35,17 @@ Base.@propagate_inbounds combine_update(array, update, index) =
     array[index...] .= update
 
 function map_template(f, r, make, update)
-    input_iterator = r.iterator
+    input_indexer = r.indexer
     input = r.array
 
-    first_input = input[first(input_iterator)...]
+    first_input = input[first(input_indexer)...]
     first_output = f(first_input)
     maybe_swap = is_swappable(first_input, first_output)
 
-    output, output_iterator = make(input_iterator, first_output)
-    for index in Iterators.Drop(input_iterator, 1)
-        an_output = f(maybe_swap(input, first(next(input_iterator, index)), first_input))
-        @inbounds update(output, an_output, first(next(output_iterator, index)))
+    output, output_indexer = make(input_indexer, first_output)
+    for index in Iterators.Drop(input_indexer, 1)
+        an_output = f(maybe_swap(input, first(next(input_indexer, index)), first_input))
+        @inbounds update(output, an_output, first(next(output_indexer, index)))
     end
     output
 end
@@ -66,11 +66,11 @@ optimization(::typeof(mean)) = OutOfPlaceArray(mean!)
 
 # TODO: varm, var, std
 
-colon_dimensions(r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
-    find_tuple(not.(r.iterator.iterated))
+colon_dimensions(r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneIndexer} =
+    find_tuple(not.(r.indexer.indexed))
 
 """
-    Base.map(r::ReiteratedArray)
+    Base.map(r::ReindexedArray)
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -94,15 +94,15 @@ julia> map(mean, julienne(array, (:, *)))
  2.0  5.0  8.0
 ```
 """
-Base.map(f, r::ReiteratedArray) = Base.map(optimization(f), r)
+Base.map(f, r::ReindexedArray) = Base.map(optimization(f), r)
 
-Base.map(f::FunctionOptimization, r::ReiteratedArray) =
+Base.map(f::FunctionOptimization, r::ReindexedArray) =
     map_template(f.f, r, map_make, map_update)
 
-Base.map(f::Reduction, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} =
+Base.map(f::Reduction, r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneIndexer} =
     mapreducedim(identity, f.f, r.array, colon_dimensions(r))
 
-Base.map(f::OutOfPlaceArray, r::ReiteratedArray{T, N, A, I}) where {T, N, A, I <: JulienneIterator} = begin
+Base.map(f::OutOfPlaceArray, r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneIndexer} = begin
     array = r.array
     f.f(Base.reducedim_initarray(array, colon_dimensions(r), 0, Base.momenttype(eltype(array))), array)
 end
@@ -129,5 +129,5 @@ julia> combine(Base.Generator(sort, julienne(array, (*, :))))
  7  8  9
 ```
 """
-combine(g::Base.Generator{T} where T <: ReiteratedArray) =
+combine(g::Base.Generator{T} where T <: ReindexedArray) =
     map_template(g.f, g.iter, combine_make, combine_update)

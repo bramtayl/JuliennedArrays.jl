@@ -1,7 +1,7 @@
 module JuliennedArrays
 
 include("tuple_algebra.jl")
-include("iterators.jl")
+include("indexers.jl")
 include("combine.jl")
 
 end
