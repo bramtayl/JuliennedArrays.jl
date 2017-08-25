@@ -7,13 +7,15 @@ Base.indices(j::JulienneIndexer) = get_index(j.indexes, j.indexed)
 Base.size(j::JulienneIndexer) = length.(indices(j))
 Base.getindex(j::JulienneIndexer{T, N}, index::Vararg{Int, N}) where {T, N} =
     set_index(j.indexes, index, j.indexed)
- 
+
 JulienneIndexer(indexes, indexed) =
     JulienneIndexer{
         typeof(fill_index(indexes, 1, indexed)),
         length(get_index(indexes, indexed)),
         typeof(indexes),
         typeof(indexed)}(indexes, indexed)
+
+change_indexes(j::JulienneIndexer, indexes) = JulienneIndexer(indexes, j.indexed)
 
 struct ReindexedArray{T, N, A, I} <: AbstractArray{T, N}
     array::A

@@ -41,3 +41,5 @@ optimization(::typeof(minimum)) = Reduction(scalarmin)
 optimization(::typeof(all)) = Reduction(&)
 optimization(::typeof(any)) = Reduction(|)
 optimization(::typeof(mean)) = OutOfPlaceArray(mean!)
+
+# TODO: varm, var, std

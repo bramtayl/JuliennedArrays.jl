@@ -24,6 +24,7 @@ println("combine, small")
 @btime mapslices(sort, array, 1)
 @btime sort_test(array)
 @btime sort(array, 1)
+@btime sort_view_test(big_array)
 
 println("combine, large")
 @btime @inbounds mapslices(sort, big_array, 1)
