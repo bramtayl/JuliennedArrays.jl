@@ -7,7 +7,7 @@ Base.indices(j::JulienneIndexer) = get_index(j.indexes, j.indexed)
 Base.size(j::JulienneIndexer) = length.(indices(j))
 Base.getindex(j::JulienneIndexer{T, N}, index::Vararg{Int, N}) where {T, N} =
     set_index(j.indexes, index, j.indexed)
-
+ 
 JulienneIndexer(indexes, indexed) =
     JulienneIndexer{
         typeof(fill_index(indexes, 1, indexed)),

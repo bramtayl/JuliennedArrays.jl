@@ -43,8 +43,8 @@ reoptimize(f::None, first_input::StridedArray, first_output::Number) =
 reoptimize(f::None, first_input::StridedArray, first_output::AbstractArray{<: Number}) =
     Swap(f.f)
 
-apply(reoptimized::FunctionOptimization, input, input_index, first_input) =
-    reoptimized.f(input[input_index...])
+#apply(reoptimized::FunctionOptimization, input, input_index, first_input) =
+    #reoptimized.f(input[input_index...])
 apply(reoptimized::Swap, input, input_index, first_input) =
     reoptimized.f(Base._unsafe_getindex!(first_input, input, input_index...))
 apply(reoptimized::View, input, input_index, first_input) =
@@ -111,7 +111,8 @@ end
 
 map_combine(f::FunctionOptimization, r) =
     map_template(f, r, combine_make, combine_update)
-map_combine(f, r) = map_combine(optimization(f), r)
+map_combine(f, r) =
+    map_combine(optimization(f), r)
 
 export combine
 """
@@ -128,7 +129,7 @@ julia> array = [1 3 2; 5 6 4; 7 9 8]
  5  6  4
  7  9  8
 
-julia> result = combine(Base.Generator(sort, julienne(array, (*, :))))
+julia> result = combine(g = Base.Generator(sort, julienne(array, (*, :))))
 3×3 Array{Int64,2}:
  1  2  3
  4  5  6
