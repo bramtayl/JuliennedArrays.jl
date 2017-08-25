@@ -73,6 +73,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Base.map!-Tuple{Any,Any,Any}",
+    "page": "Home",
+    "title": "Base.map!",
+    "category": "Method",
+    "text": "Base.map!(f, output, r::ReindexedArray)\n\njulia> using JuliennedArrays\n\njulia> array = reshape(1:9, 3, 3)\n3×3 Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}}:\n 1  4  7\n 2  5  8\n 3  6  9\n\njulia> output = Array{Int}(3);\n\njulia> map!(sum, output, julienne(array, (*, :)));\n\njulia> output\n3-element Array{Int64,1}:\n 12\n 15\n 18\n\n\n\n"
+},
+
+{
     "location": "index.html#Base.map-Tuple{Any,JuliennedArrays.ReindexedArray}",
     "page": "Home",
     "title": "Base.map",
