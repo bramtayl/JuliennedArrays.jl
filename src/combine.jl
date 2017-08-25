@@ -1,10 +1,3 @@
-Base.@propagate_inbounds none(array, index, swap) = array[index...]
-Base.@propagate_inbounds swap!(array, index, swap) = Base._unsafe_getindex!(swap, array, index...)
-
-is_swappable(first_input, first_output) = none
-is_swappable(first_input::StridedArray, first_output::Number) = swap!
-is_swappable(first_input::StridedArray, first_output::AbstractArray{T} where T <: Number) = swap!
-
 map_make(input_indexer::JulienneIndexer, first_output) = begin
     indexed = input_indexer.indexed
     output_indexes = fill_index(input_indexer.indexes, 1, not.(indexed))
@@ -28,41 +21,50 @@ combine_make(input_indexer::JulienneIndexer, first_output) = begin
     output, output_indexer
 end
 
-Base.@propagate_inbounds map_update(array, update, index) =
+map_update(array, update, index) =
     array[index...] = update
 
-Base.@propagate_inbounds combine_update(array, update, index) =
+@inline combine_update(array, update, index) =
     array[index...] .= update
+
+apply_first(f::FunctionOptimization, input, input_index) = begin
+    first_input = input[input_index...]
+    first_input, f.f(first_input)
+end
+apply_first(f::View, input, input_index) = begin
+    first_input = @view input[input_index...]
+    first_input, f.f(first_input)
+end
+
+reoptimize(f, first_input, first_output) =
+    f
+reoptimize(f::None, first_input::StridedArray, first_output::Number) =
+    Swap(f.f)
+reoptimize(f::None, first_input::StridedArray, first_output::AbstractArray{<: Number}) =
+    Swap(f.f)
+
+apply(reoptimized::FunctionOptimization, input, input_index, first_input) =
+    reoptimized.f(input[input_index...])
+apply(reoptimized::Swap, input, input_index, first_input) =
+    reoptimized.f(Base._unsafe_getindex!(first_input, input, input_index...))
+apply(reoptimized::View, input, input_index, first_input) =
+    reoptimized.f(@view input[input_index...])
 
 function map_template(f, r, make, update)
     input_indexer = r.indexer
     input = r.array
 
-    first_input = input[first(input_indexer)...]
-    first_output = f(first_input)
-    maybe_swap = is_swappable(first_input, first_output)
+    first_input, first_output = apply_first(f, input, first(input_indexer))
+    reoptimized = reoptimize(f, first_input, first_output)
 
     output, output_indexer = make(input_indexer, first_output)
+    index = first(Iterators.Drop(input_indexer, 1))
     for index in Iterators.Drop(input_indexer, 1)
-        an_output = f(maybe_swap(input, first(next(input_indexer, index)), first_input))
+        an_output = apply(reoptimized, input, first(next(input_indexer, index)), first_input)
         @inbounds update(output, an_output, first(next(output_indexer, index)))
     end
     output
 end
-
-abstract type FunctionOptimization end
-struct None{F} <: FunctionOptimization; f::F; end
-struct Reduction{F} <: FunctionOptimization; f::F; end
-struct OutOfPlaceArray{F} <: FunctionOptimization; f::F; end
-optimization(f) = None(f)
-optimization(::typeof(median)) = None(median!)
-optimization(::typeof(sum)) = Reduction(+)
-optimization(::typeof(prod)) = Reduction(*)
-optimization(::typeof(maximum)) = Reduction(scalarmax)
-optimization(::typeof(minimum)) = Reduction(scalarmin)
-optimization(::typeof(all)) = Reduction(&)
-optimization(::typeof(any)) = Reduction(|)
-optimization(::typeof(mean)) = OutOfPlaceArray(mean!)
 
 # TODO: varm, var, std
 
@@ -70,7 +72,7 @@ colon_dimensions(r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneInd
     find_tuple(not.(r.indexer.indexed))
 
 """
-    Base.map(r::ReindexedArray)
+    Base.map(f, r::ReindexedArray)
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -97,7 +99,7 @@ julia> map(mean, julienne(array, (:, *)))
 Base.map(f, r::ReindexedArray) = Base.map(optimization(f), r)
 
 Base.map(f::FunctionOptimization, r::ReindexedArray) =
-    map_template(f.f, r, map_make, map_update)
+    map_template(f, r, map_make, map_update)
 
 Base.map(f::Reduction, r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneIndexer} =
     mapreducedim(identity, f.f, r.array, colon_dimensions(r))
@@ -106,6 +108,10 @@ Base.map(f::OutOfPlaceArray, r::ReindexedArray{T, N, A, I}) where {T, N, A, I <:
     array = r.array
     f.f(Base.reducedim_initarray(array, colon_dimensions(r), 0, Base.momenttype(eltype(array))), array)
 end
+
+map_combine(f::FunctionOptimization, r) =
+    map_template(f, r, combine_make, combine_update)
+map_combine(f, r) = map_combine(optimization(f), r)
 
 export combine
 """
@@ -116,18 +122,30 @@ Combine many pieces of an array.
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> array = reshape([1 3 2; 5 6 4; 7 9 8], 3, 3)
+julia> array = [1 3 2; 5 6 4; 7 9 8]
 3×3 Array{Int64,2}:
  1  3  2
  5  6  4
  7  9  8
 
-julia> combine(Base.Generator(sort, julienne(array, (*, :))))
+julia> result = combine(Base.Generator(sort, julienne(array, (*, :))))
 3×3 Array{Int64,2}:
  1  2  3
  4  5  6
  7  8  9
+
+julia> array == result
+false
+
+julia> result2 = combine(Base.Generator(View(sort!), julienne(array, (*, :))))
+3×3 Array{Int64,2}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> array == result2
+true
 ```
 """
-combine(g::Base.Generator{T} where T <: ReindexedArray) =
-    map_template(g.f, g.iter, combine_make, combine_update)
+combine(g::Base.Generator{<: ReindexedArray}) =
+    map_combine(g.f, g.iter)
