@@ -68,7 +68,7 @@ Base.map!(f::FunctionOptimization, output, r) = begin
 end
 
 colon_dimensions(r::ReindexedArray{T, N, A, I}) where {T, N, A, I <: JulienneIndexer} =
-    find_tuple(not.(r.indexer.indexed))
+    drop_tuple(find_tuple(not.(r.indexer.indexed)))
 
 """
     Base.map(f, r::ReindexedArray)
