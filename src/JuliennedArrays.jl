@@ -97,7 +97,7 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> arrays = julienne(Arrays, array, (*, :))
+julia> arrays = julienne(Arrays, array, (*, :));
 
 julia> map(sum, arrays)
 3-element Array{Int64,1}:
