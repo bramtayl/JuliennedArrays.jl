@@ -1,4 +1,4 @@
-using BenchmarkTools
+using BenchmarkTools, JuliennedArrays, MappedArrays
 
 const array = reshape(1:9, 3, 3)
 const big_array = rand(1000, 1000)
