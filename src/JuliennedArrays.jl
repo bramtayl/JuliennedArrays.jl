@@ -27,6 +27,7 @@ size(r::Shares) = size(r.indexer)
 @propagate_inbounds setindex!(r::Shares{T, N}, v, index::Vararg{Int, N}) where {T, N} =
     r.array[r.indexer[index...]...] = v
 
+export Arrays
 struct Arrays{T, N, A, I} <: Shares{T, N, A, I}
     array::A
     indexer::I
@@ -38,6 +39,7 @@ end
 Arrays(array::A, indexer::I) where {A, I <: AbstractArray{T, N}}  where {T, N} =
     Arrays{typeof(array[first(indexer)...]), N, A, I}(array, indexer)
 
+export Views
 struct Views{T, N, A, I} <: Shares{T, N, A, I}
     array::A
     indexer::I
@@ -54,6 +56,7 @@ Views(array::A, indexer::I) where
 @propagate_inbounds getindex(r::Views{T, N}, index::Vararg{Int, N}) where {T, N} =
     @view r.array[r.indexer[index...]...]
 
+export Swaps
 struct Swaps{T, N, A, I} <: Shares{T, N, A, I}
     array::A
     indexer::I
