@@ -26,7 +26,7 @@ Views(array::A, indexer::I) where
     {A <: AbstractArray{TA}, I <: AbstractArray{TI, N}} where
         {TA, TI, N} =
     Views{
-        SubArray{TA, TI, A, N,
+        SubArray{TA, N, A, TI,
             isa(IndexStyle(Base.viewindexing(first(indexer)), IndexStyle(array)), IndexLinear)},
         N, A, I}(array, indexer)
 
