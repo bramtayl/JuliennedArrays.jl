@@ -14,13 +14,6 @@ JulienneIndexer(indexes::IS, indexed::ID) where {IS, ID} =
         length(getindex_unrolled(indexes, indexed)),
         IS, ID}(indexes, indexed)
 
-find_unrolled(t) = find_unrolled(t, 1)
-find_unrolled(t::Tuple{}, n) = ()
-find_unrolled(t, n) = begin
-    next = find_unrolled(Base.tail(t), n + 1)
-    ifelse(first(t), (n, next...), next)
-end
-
 drop_tuple(t::Tuple{A}) where A = first(t)
 drop_tuple(t) = t
 
@@ -41,7 +34,7 @@ indicates an axis parallel to slices and `*` indices an axis perpendicular to
 slices.
 
 ```jldoctest
-julia> using JuliennedArrays
+julia> using JuliennedArrays, Base.Test
 
 julia> code = (*, :);
 
@@ -51,25 +44,25 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> arrays = julienne(Arrays, array, (*, :));
+julia> arrays = @inferred julienne(Arrays, array, (*, :));
 
-julia> map(mean, arrays)
+julia> @inferred map(mean, arrays)
 3-element Array{Float64,1}:
  5.0
  2.0
  8.0
 
-julia> views = julienne(Views, array, (*, :));
+julia> views = @inferred julienne(Views, array, (*, :));
 
-julia> map(mean, views)
+julia> @inferred map(mean, views)
 3-element Array{Float64,1}:
  5.0
  2.0
  8.0
 
-julia> swaps = julienne(Swaps, array, (*, :));
+julia> swaps = @inferred julienne(Swaps, array, (*, :));
 
-julia> map(mean, swaps)
+julia> @inferred map(mean, swaps)
 3-element Array{Float64,1}:
  5.0
  2.0
@@ -89,7 +82,7 @@ while `*` indicates dimensions taken up by the container array. Each slice
 should be EXACTLY the same size.
 
 ```jldoctest
-julia> using JuliennedArrays, MappedArrays
+julia> using JuliennedArrays, MappedArrays, Base.Test
 
 julia> code = (*, :);
 
@@ -99,9 +92,9 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> swaps = julienne(Swaps, array, code);
+julia> swaps = @inferred julienne(Swaps, array, code);
 
-julia> align(mappedarray(sort, swaps), code)
+julia> @inferred align(mappedarray(sort, swaps), code)
 3×3 Array{Int64,2}:
  4  5  6
  1  2  3

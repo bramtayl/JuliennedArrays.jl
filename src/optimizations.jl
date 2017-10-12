@@ -8,7 +8,7 @@ A reduction of another function. Enables optimizations in some cases.
 Automatically enabled for known reduction functions.
 
 ```jldoctest
-julia> using JuliennedArrays
+julia> using JuliennedArrays, Base.Test, Base.Test
 
 julia> array = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
@@ -16,15 +16,15 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> swaps = julienne(Swaps, array, (*, :));
+julia> swaps = @inferred julienne(Swaps, array, (*, :));
 
-julia> map(Reduction(+), swaps)
+julia> @inferred map(Reduction(+), swaps)
 3×1 Array{Int64,2}:
  15
   6
  24
 
-julia> map(sum, swaps)
+julia> @inferred map(sum, swaps)
 3×1 Array{Int64,2}:
  15
   6
