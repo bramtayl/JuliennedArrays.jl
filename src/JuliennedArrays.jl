@@ -1,8 +1,12 @@
 module JuliennedArrays
 
-include("tuple_algebra.jl")
-include("indexers.jl")
+using RecurUnroll: getindex_unrolled, setindex_unrolled, find_unrolled
+using TypedBools: True, False
+
+import Base: indices, size, getindex, setindex!, @propagate_inbounds, map
+
+include("shares.jl")
+include("julienne.jl")
 include("optimizations.jl")
-include("combine.jl")
 
 end

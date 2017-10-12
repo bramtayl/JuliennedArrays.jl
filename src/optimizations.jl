@@ -1,45 +1,46 @@
-export Reduction, OutOfPlaceArray, View, Swap
+abstract type FunctionOptimization{F} end
 
-abstract type FunctionOptimization end
-
-struct None{F} <: FunctionOptimization; f::F; end
-
+export Reduction
 """
     struct Reduction{F} <: FunctionOptimization; f::F; end
 
-A reduction of another function
+A reduction of another function. Enables optimizations in some cases.
+Automatically enabled for known reduction functions.
+
+```jldoctest
+julia> using JuliennedArrays, Base.Test, Base.Test
+
+julia> array = [5 6 4; 1 3 2; 7 9 8]
+3×3 Array{Int64,2}:
+ 5  6  4
+ 1  3  2
+ 7  9  8
+
+julia> swaps = @inferred julienne(Swaps, array, (*, :));
+
+julia> @inferred map(Reduction(+), swaps)
+3×1 Array{Int64,2}:
+ 15
+  6
+ 24
+
+julia> @inferred map(sum, swaps)
+3×1 Array{Int64,2}:
+ 15
+  6
+ 24
+```
 """
-struct Reduction{F} <: FunctionOptimization; f::F; end
+struct Reduction{F} <: FunctionOptimization{F}; f::F; end
 
-"""
-    struct OutOfPlaceArray{F} <: FunctionOptimization; f::F; end
+const JuliennedArray = Shares{T, N, A, I} where {T, N, A, I <: JulienneIndexer}
 
-A function with a faster in-place analog on a whole preallocated output.
-"""
-struct OutOfPlaceArray{F} <: FunctionOptimization; f::F; end
+map(r::Reduction, s::JuliennedArray) =
+    mapreducedim(identity, r.f, s.array, colon_dimensions(s.indexer))
 
-"""
-    struct View{F} <: FunctionOptimization; f::F; end
-
-A function that should be called on views, not copies
-"""
-struct View{F} <: FunctionOptimization; f::F; end
-
-"""
-    struct Swap{F} <: FunctionOptimization; f::F; end
-
-A function that can be reused on a temporary array
-"""
-struct Swap{F} <: FunctionOptimization; f::F; end
-
-optimization(f) = None(f)
-optimization(::typeof(median)) = None(median!)
-optimization(::typeof(sum)) = Reduction(+)
-optimization(::typeof(prod)) = Reduction(*)
-optimization(::typeof(maximum)) = Reduction(scalarmax)
-optimization(::typeof(minimum)) = Reduction(scalarmin)
-optimization(::typeof(all)) = Reduction(&)
-optimization(::typeof(any)) = Reduction(|)
-optimization(::typeof(mean)) = OutOfPlaceArray(mean!)
-
-# TODO: varm, var, std
+map(f::typeof(sum), s::JuliennedArray) = map(Reduction(+), s)
+map(f::typeof(prod), s::JuliennedArray) = map(Reduction(*), s)
+map(f::typeof(maximum), s::JuliennedArray) = map(Reduction(scalarmax), s)
+map(f::typeof(minimum), s::JuliennedArray) = map(Reduction(scalarmin), s)
+map(f::typeof(all), s::JuliennedArray) = map(Reduction(&), s)
+map(f::typeof(any), s::JuliennedArray) = map(Reduction(|), s)
