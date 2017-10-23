@@ -40,7 +40,6 @@ is_indexed(::typeof(:)) = False()
 export julienne
 """
     julienne(T, array, code)
-    julienne(T, array, code, swap)
 
 Slice an array and create `Parts` of type `T`. `T` should be one of `Arrays`,
 `Swaps`, or `Views`. See the `Parts` package for more information. The code
