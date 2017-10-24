@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · JuliennedArrays.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>JuliennedArrays.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li class="current"><a class="toctext" href="index.html">Home</a><ul class="internal"><li><a class="toctext" href="#Demo-1">Demo</a></li><li><a class="toctext" href="#Index-1">Index</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href="index.html">Home</a></li></ul><a class="edit-page" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/master/docs/src/index.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Home</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="JuliennedArrays.jl-1" href="#JuliennedArrays.jl-1">JuliennedArrays.jl</a></h1><h2><a class="nav-anchor" id="Demo-1" href="#Demo-1">Demo</a></h2><p>This package contains a fast iterator for slicing (julienning) arrays.</p><h2><a class="nav-anchor" id="Index-1" href="#Index-1">Index</a></h2><ul><li><a href="index.html#JuliennedArrays.Reduction"><code>JuliennedArrays.Reduction</code></a></li><li><a href="index.html#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a></li><li><a href="index.html#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a></li></ul><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.Reduction" href="#JuliennedArrays.Reduction"><code>JuliennedArrays.Reduction</code></a> — <span class="docstring-category">Type</span>.</div><div><pre><code class="language-none">struct Reduction{F} &lt;: FunctionOptimization; f::F; end</code></pre><p>A reduction of another function. Enables optimizations in some cases. Automatically enabled for known reduction functions.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test, Base.Test
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · JuliennedArrays.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>JuliennedArrays.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li class="current"><a class="toctext" href="index.html">Home</a><ul class="internal"><li><a class="toctext" href="#Demo-1">Demo</a></li><li><a class="toctext" href="#Index-1">Index</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href="index.html">Home</a></li></ul><a class="edit-page" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/master/docs/src/index.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Home</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="JuliennedArrays.jl-1" href="#JuliennedArrays.jl-1">JuliennedArrays.jl</a></h1><h2><a class="nav-anchor" id="Demo-1" href="#Demo-1">Demo</a></h2><p>This package contains a fast iterator for slicing (julienning) arrays.</p><h2><a class="nav-anchor" id="Index-1" href="#Index-1">Index</a></h2><ul><li><a href="index.html#JuliennedArrays.Reduction"><code>JuliennedArrays.Reduction</code></a></li><li><a href="index.html#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a></li><li><a href="index.html#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a></li></ul><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.Reduction" href="#JuliennedArrays.Reduction"><code>JuliennedArrays.Reduction</code></a> — <span class="docstring-category">Type</span>.</div><div><pre><code class="language-none">struct Reduction{F}</code></pre><p>A reduction of another function. Enables optimizations in some cases.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test, Base.Test
 
 julia&gt; array = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
@@ -7,19 +7,13 @@ julia&gt; array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia&gt; swaps = @inferred julienne(Swaps, array, (*, :));
+julia&gt; swaps = @inferred julienne(Views, array, (*, :));
 
 julia&gt; @inferred map(Reduction(+), swaps)
 3×1 Array{Int64,2}:
  15
   6
- 24
-
-julia&gt; @inferred map(sum, swaps)
-3×1 Array{Int64,2}:
- 15
-  6
- 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4702abee0e2226ca3f7488e771d3458900508a0d/src/optimizations.jl#L4-L33">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}" href="#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">align(slices, code)</code></pre><p>Align an array of slices into a larger array. Code should be a tuple for each dimension of the desired output. Slices will slide into dimensions coded by <code>:</code>, while <code>*</code> indicates dimensions taken up by the container array. Each slice should be EXACTLY the same size.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, MappedArrays, Base.Test
+ 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/2b14809d0dd37f27876b4fc106c385b8cc2f2287/src/JuliennedArrays.jl#L133-L155">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}" href="#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">align(slices, code)</code></pre><p>Align an array of slices into a larger array. Code should be a tuple with an entry for each dimension of the desired output. Slices will slide into dimensions coded by <code>:</code>, while <code>*</code> indicates dimensions taken up by the container array. Each slice should be EXACTLY the same size.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, MappedArrays, Base.Test
 
 julia&gt; code = (*, :);
 
@@ -29,14 +23,13 @@ julia&gt; array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia&gt; swaps = @inferred julienne(Swaps, array, code);
+julia&gt; swaps = @inferred julienne(Views, array, code);
 
 julia&gt; @inferred align(mappedarray(sort, swaps), code)
 3×3 Array{Int64,2}:
  4  5  6
  1  2  3
- 7  8  9</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4702abee0e2226ca3f7488e771d3458900508a0d/src/julienne.jl#L76-L103">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.julienne-Tuple{Any,Any,Any}" href="#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">julienne(T, array, code)
-julienne(T, array, code, swap)</code></pre><p>Slice an array and create shares of type <code>T</code>. <code>T</code> should be one of <code>Arrays</code>, <code>Swaps</code>, or <code>Views</code>. The code should a tuple of length <code>ndims(array)</code>, where <code>:</code> indicates an axis parallel to slices and <code>*</code> indices an axis perpendicular to slices.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test
+ 7  8  9</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/2b14809d0dd37f27876b4fc106c385b8cc2f2287/src/JuliennedArrays.jl#L73-L100">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.julienne-Tuple{Any,Any,Any}" href="#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">julienne(T, array, code)</code></pre><p>Slice an array and create <code>Parts</code> of type <code>T</code>. <code>T</code> should be one of <code>Arrays</code>, <code>Swaps</code>, or <code>Views</code>. See the <code>Parts</code> package for more information. The code should a tuple of length <code>ndims(array)</code>, where <code>:</code> indicates an axis parallel to slices and <code>*</code> indices an axis perpendicular to slices.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test
 
 julia&gt; code = (*, :);
 
@@ -46,26 +39,10 @@ julia&gt; array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia&gt; arrays = @inferred julienne(Arrays, array, (*, :));
+julia&gt; arrays = @inferred julienne(Views, array, (*, :));
 
-julia&gt; @inferred map(mean, arrays)
-3-element Array{Float64,1}:
- 5.0
- 2.0
- 8.0
-
-julia&gt; views = @inferred julienne(Views, array, (*, :));
-
-julia&gt; @inferred map(mean, views)
-3-element Array{Float64,1}:
- 5.0
- 2.0
- 8.0
-
-julia&gt; swaps = @inferred julienne(Swaps, array, (*, :));
-
-julia&gt; @inferred map(mean, swaps)
-3-element Array{Float64,1}:
- 5.0
- 2.0
- 8.0</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4702abee0e2226ca3f7488e771d3458900508a0d/src/julienne.jl#L27-L71">source</a></section><footer><hr/></footer></article></body></html>
+julia&gt; @inferred map(sum, arrays)
+3-element Array{Int64,1}:
+ 15
+  6
+ 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/2b14809d0dd37f27876b4fc106c385b8cc2f2287/src/JuliennedArrays.jl#L41-L68">source</a></section><footer><hr/></footer></article></body></html>
