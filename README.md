@@ -6,8 +6,6 @@
 
 ## Documentation [here][documenter_latest]
 
-Change documentation link to `documenter_stable` once published!
-
 [travis_badge]: https://travis-ci.org/bramtayl/JuliennedArrays.jl.svg?branch=master
 [travis_url]: https://travis-ci.org/bramtayl/JuliennedArrays.jl
 
