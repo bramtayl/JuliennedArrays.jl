@@ -39,17 +39,16 @@ is_indexed(::typeof(:)) = False()
 
 export julienne
 """
-    julienne(T, array, code)
+    julienne([T = Views], array, code)
 
 Slice an array and create `Parts` of type `T`. `T` should be one of `Arrays`,
-`Swaps`, or `Views`. See the `Parts` package for more information. The code
-should a tuple of length `ndims(array)`, where `:` indicates an axis parallel
-to slices and `*` indices an axis perpendicular to slices.
+`Swaps`, or `Views`. It defaults to `Views`. See the `Parts` package for more
+information. The code should a tuple of length `ndims(array)`, where `:`
+indicates an axis parallel to slices and `*` indices an axis perpendicular to
+slices.
 
 ```jldoctest
 julia> using JuliennedArrays, Base.Test
-
-julia> code = (*, :);
 
 julia> array = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
@@ -57,9 +56,7 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> arrays = @inferred julienne(Views, array, (*, :));
-
-julia> @inferred map(sum, arrays)
+julia> @inferred map(sum, julienne(array, (*, :)))
 3-element Array{Int64,1}:
  15
   6
@@ -68,6 +65,8 @@ julia> @inferred map(sum, arrays)
 """
 julienne(T, array, code) =
     T(array, JulienneIndexer(indices(array), is_indexed.(code)))
+
+julienne(array, code) = julienne(Views, array, code)
 
 export align
 """
@@ -89,9 +88,9 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> swaps = @inferred julienne(Views, array, code);
+julia> views = @inferred julienne(array, code);
 
-julia> @inferred align(mappedarray(sort, swaps), code)
+julia> @inferred align(mappedarray(sort, views), code)
 3×3 Array{Int64,2}:
  4  5  6
  1  2  3
@@ -144,9 +143,7 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
  1  3  2
  7  9  8
 
-julia> swaps = @inferred julienne(Views, array, (*, :));
-
-julia> @inferred map(Reduction(+), swaps)
+julia> @inferred map(Reduction(+), julienne(array, (*, :)))
 3×1 Array{Int64,2}:
  15
   6
