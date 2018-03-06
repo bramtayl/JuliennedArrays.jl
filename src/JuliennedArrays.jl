@@ -1,7 +1,7 @@
 module JuliennedArrays
 
-using RecurUnroll: getindex_unrolled, setindex_unrolled, find_unrolled
-using TypedBools: True, False
+using RecurUnroll: getindex_unrolled, setindex_many_unrolled, find_unrolled
+using TypedBools: True, False, not
 using Parts: AbstractParts, Arrays, Views, Swaps
 
 export Arrays
@@ -18,11 +18,11 @@ end
 indices(j::JulienneIndexer) = getindex_unrolled(j.indexes, j.indexed)
 size(j::JulienneIndexer) = length.(indices(j))
 getindex(j::JulienneIndexer{T, N}, index::Vararg{Int, N}) where {T, N} =
-    setindex_unrolled(j.indexes, index, j.indexed)
+    setindex_many_unrolled(j.indexes, index, j.indexed)
 
 JulienneIndexer(indexes, indexed) =
     JulienneIndexer{
-        typeof(setindex_unrolled(indexes, 1, indexed)),
+        typeof(ifelse.(indexed, 1, indexes)),
         length(getindex_unrolled(indexes, indexed)),
         typeof(indexes),
         typeof(indexed)
@@ -32,7 +32,7 @@ drop_tuple(t::Tuple{A}) where A = first(t)
 drop_tuple(t) = t
 
 colon_dimensions(j::JulienneIndexer) =
-    drop_tuple(find_unrolled(.!(j.indexed)))
+    drop_tuple(find_unrolled(not.(j.indexed)))
 
 is_indexed(::typeof(*)) = True()
 is_indexed(::typeof(:)) = False()
@@ -90,7 +90,7 @@ julia> array = [5 6 4; 1 3 2; 7 9 8]
 
 julia> views = @inferred julienne(array, code);
 
-julia> @inferred align(mappedarray(sort, views), code)
+julia> align(mappedarray(sort, views), code)
 3×3 Array{Int64,2}:
  4  5  6
  1  2  3
@@ -105,14 +105,14 @@ function align(input_slices::AbstractArray{<: AbstractArray}, code)
     trivial = Base.OneTo(1)
 
     output_indexes =
-        setindex_unrolled(
-            setindex_unrolled(
+        setindex_many_unrolled(
+            setindex_many_unrolled(
                 indexed,
                 indices(input_slices),
                 indexed,
                 trivial),
             indices(first_input_slice),
-            .!indexed,
+            not.(indexed),
             trivial
         )
 
