@@ -22,7 +22,9 @@ getindex(j::JulienneIndexer{T, N}, index::Vararg{Int, N}) where {T, N} =
 
 JulienneIndexer(indexes, indexed) =
     JulienneIndexer{
-        typeof(ifelse.(indexed, 1, indexes)),
+        typeof(map(indexed, indexes) do switch, index
+            ifelse(switch, 1, index)
+        end),
         length(getindex_unrolled(indexes, indexed)),
         typeof(indexes),
         typeof(indexed)
@@ -148,6 +150,21 @@ julia> @inferred map(Reduction(+), julienne(array, (*, :)))
  15
   6
  24
+
+julia> array = reshape(1:8, 2, 2, 2)
+2×2×2 Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}}:
+[:, :, 1] =
+ 1  3
+ 2  4
+
+[:, :, 2] =
+ 5  7
+ 6  8
+
+julia> @inferred map(Reduction(+), julienne(array, (:, *, :)))
+1×2×1 Array{Int64,3}:
+[:, :, 1] =
+ 14  22
 ```
 """
 struct Reduction{F} <: FunctionOptimization{F}; f::F; end
