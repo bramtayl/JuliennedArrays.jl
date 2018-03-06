@@ -11,7 +11,22 @@ julia&gt; @inferred map(Reduction(+), julienne(array, (*, :)))
 3×1 Array{Int64,2}:
  15
   6
- 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4584ed9f47b6900e9420eb532892d22437663bba/src/JuliennedArrays.jl#L132-L152">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}" href="#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">align(slices, code)</code></pre><p>Align an array of slices into a larger array. Code should be a tuple with an entry for each dimension of the desired output. Slices will slide into dimensions coded by <code>:</code>, while <code>*</code> indicates dimensions taken up by the container array. Each slice should be EXACTLY the same size.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, MappedArrays, Base.Test
+ 24
+
+julia&gt; array = reshape(1:8, 2, 2, 2)
+2×2×2 Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}}:
+[:, :, 1] =
+ 1  3
+ 2  4
+
+[:, :, 2] =
+ 5  7
+ 6  8
+
+julia&gt; @inferred map(Reduction(+), julienne(array, (:, *, :)))
+1×2×1 Array{Int64,3}:
+[:, :, 1] =
+ 14  22</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/876c5e934f50607a363ac12176a09996d2504472/src/JuliennedArrays.jl#L134-L169">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}" href="#JuliennedArrays.align-Tuple{AbstractArray{#s5,N} where N where #s5&lt;:AbstractArray,Any}"><code>JuliennedArrays.align</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">align(slices, code)</code></pre><p>Align an array of slices into a larger array. Code should be a tuple with an entry for each dimension of the desired output. Slices will slide into dimensions coded by <code>:</code>, while <code>*</code> indicates dimensions taken up by the container array. Each slice should be EXACTLY the same size.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, MappedArrays, Base.Test
 
 julia&gt; code = (*, :);
 
@@ -27,7 +42,7 @@ julia&gt; align(mappedarray(sort, views), code)
 3×3 Array{Int64,2}:
  4  5  6
  1  2  3
- 7  8  9</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4584ed9f47b6900e9420eb532892d22437663bba/src/JuliennedArrays.jl#L72-L99">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.julienne-Tuple{Any,Any,Any}" href="#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">julienne([T = Views], array, code)</code></pre><p>Slice an array and create <code>Parts</code> of type <code>T</code>. <code>T</code> should be one of <code>Arrays</code>, <code>Swaps</code>, or <code>Views</code>. It defaults to <code>Views</code>. See the <code>Parts</code> package for more information. The code should a tuple of length <code>ndims(array)</code>, where <code>:</code> indicates an axis parallel to slices and <code>*</code> indices an axis perpendicular to slices.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test
+ 7  8  9</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/876c5e934f50607a363ac12176a09996d2504472/src/JuliennedArrays.jl#L74-L101">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="JuliennedArrays.julienne-Tuple{Any,Any,Any}" href="#JuliennedArrays.julienne-Tuple{Any,Any,Any}"><code>JuliennedArrays.julienne</code></a> — <span class="docstring-category">Method</span>.</div><div><pre><code class="language-none">julienne([T = Views], array, code)</code></pre><p>Slice an array and create <code>Parts</code> of type <code>T</code>. <code>T</code> should be one of <code>Arrays</code>, <code>Swaps</code>, or <code>Views</code>. It defaults to <code>Views</code>. See the <code>Parts</code> package for more information. The code should a tuple of length <code>ndims(array)</code>, where <code>:</code> indicates an axis parallel to slices and <code>*</code> indices an axis perpendicular to slices.</p><pre><code class="language-julia-repl">julia&gt; using JuliennedArrays, Base.Test
 
 julia&gt; array = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
@@ -39,4 +54,4 @@ julia&gt; @inferred map(sum, julienne(array, (*, :)))
 3-element Array{Int64,1}:
  15
   6
- 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/4584ed9f47b6900e9420eb532892d22437663bba/src/JuliennedArrays.jl#L41-L65">source</a></section><footer><hr/></footer></article></body></html>
+ 24</code></pre></div><a class="source-link" target="_blank" href="https://github.com/bramtayl/JuliennedArrays.jl/blob/876c5e934f50607a363ac12176a09996d2504472/src/JuliennedArrays.jl#L43-L67">source</a></section><footer><hr/></footer></article></body></html>

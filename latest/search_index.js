@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "JuliennedArrays.Reduction",
     "category": "type",
-    "text": "struct Reduction{F}\n\nA reduction of another function. Enables optimizations in some cases.\n\njulia> using JuliennedArrays, Base.Test, Base.Test\n\njulia> array = [5 6 4; 1 3 2; 7 9 8]\n3×3 Array{Int64,2}:\n 5  6  4\n 1  3  2\n 7  9  8\n\njulia> @inferred map(Reduction(+), julienne(array, (*, :)))\n3×1 Array{Int64,2}:\n 15\n  6\n 24\n\n\n\n"
+    "text": "struct Reduction{F}\n\nA reduction of another function. Enables optimizations in some cases.\n\njulia> using JuliennedArrays, Base.Test, Base.Test\n\njulia> array = [5 6 4; 1 3 2; 7 9 8]\n3×3 Array{Int64,2}:\n 5  6  4\n 1  3  2\n 7  9  8\n\njulia> @inferred map(Reduction(+), julienne(array, (*, :)))\n3×1 Array{Int64,2}:\n 15\n  6\n 24\n\njulia> array = reshape(1:8, 2, 2, 2)\n2×2×2 Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}}:\n[:, :, 1] =\n 1  3\n 2  4\n\n[:, :, 2] =\n 5  7\n 6  8\n\njulia> @inferred map(Reduction(+), julienne(array, (:, *, :)))\n1×2×1 Array{Int64,3}:\n[:, :, 1] =\n 14  22\n\n\n\n"
 },
 
 {
