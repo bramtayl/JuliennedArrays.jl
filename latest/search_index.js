@@ -9,22 +9,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#JuliennedArrays.jl-1",
-    "page": "Home",
-    "title": "JuliennedArrays.jl",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "index.html#Demo-1",
-    "page": "Home",
-    "title": "Demo",
-    "category": "section",
-    "text": "This package contains a fast iterator for slicing (julienning) arrays."
-},
-
-{
     "location": "index.html#JuliennedArrays.Reduce",
     "page": "Home",
     "title": "JuliennedArrays.Reduce",
@@ -49,9 +33,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Index-1",
+    "location": "index.html#JuliennedArrays.jl-1",
     "page": "Home",
-    "title": "Index",
+    "title": "JuliennedArrays.jl",
     "category": "section",
     "text": "Modules = [JuliennedArrays]"
 },
