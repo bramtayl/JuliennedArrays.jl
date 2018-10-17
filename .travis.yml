@@ -9,4 +9,4 @@ notifications:
   email: false
 after_success:
   - julia -e 'import JuliennedArrays, Pkg; Pkg.add("Coverage"); import Coverage.Codecov; JuliennedArrays |> pathof |> dirname |> Codecov.process_folder |> Codecov.submit'
-  - julia -e 'import JuliennedArrays, Pkg; Pkg.add("Documenter"); joinpath(JuliennedArrays |> pathof |> dirname |> dirname, "docs", "make.jl") |> include'
+  - julia -e 'import JuliennedArrays, Pkg; ps=Pkg.PackageSpec(name="Documenter", version="0.19"); Pkg.add(ps); Pkg.pin(ps); joinpath(JuliennedArrays |> pathof |> dirname |> dirname, "docs", "make.jl") |> include'
