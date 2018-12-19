@@ -1,8 +1,10 @@
 module JuliennedArrays
 
-import Base: length, axes, setindex!, getindex, @propagate_inbounds, map
+import Base: length, axes, setindex!, getindex, @propagate_inbounds, map, collect, size
+import Base.Iterators: flatten
+export flatten
 using Keys: getindex_unrolled, setindex_unrolled, find_unrolled, True, False,
-    not, fill_tuple
+    not, fill_tuple, filter_unrolled
 
 maybe_tuple(t::Tuple) = t
 maybe_tuple(any) = (any,)
@@ -24,6 +26,7 @@ Views(array::AbstractArray, locations::AbstractArray) =
     }(array, locations)
 
 axes(v::Views) = axes(v.locations)
+size(v::Views) = size(v.locations)
 length(v::Views) = length(v.locations)
 
 @propagate_inbounds getindex(views::Views{T, N}, index::Vararg{Int, N}) where {T, N} =
@@ -38,7 +41,8 @@ struct JulienneIndexer{T, N, IS, ID} <: AbstractArray{T, N}
 end
 
 axes(j::JulienneIndexer) = getindex_unrolled(j.indexes, j.indexed)
-length(j::JulienneIndexer) = prod(length.(axes(j)))
+size(j::JulienneIndexer) = length.(axes(j))
+length(j::JulienneIndexer) = prod(size(j))
 
 getindex(j::JulienneIndexer{T, N}, index::Vararg{Int, N}) where {T, N} =
     setindex_unrolled(j.indexes, index, j.indexed)
@@ -65,6 +69,8 @@ colon_dimensions(j::JulienneIndexer) =
 
 is_indexed(::typeof(*)) = True()
 is_indexed(::typeof(:)) = False()
+is_indexed(::True) = True()
+is_indexed(::False) = False()
 
 export julienne
 """
@@ -93,14 +99,46 @@ julia> map(sum, julienne(array, (*, :)))
 julienne(array, code) =
     Views(array, JulienneIndexer(axes(array), is_indexed.(code)))
 
-export align
+
+struct FlattenedArray{T, N, Parent, Indexed} <: AbstractArray{T, N}
+    parent::Parent
+    indexed::Indexed
+end
+
+const trivial = Base.OneTo(1)
+
+function axes(f::FlattenedArray)
+    indexed = f.indexed
+    parent = f.parent
+    fill_tuple(indexed, trivial) |>
+        x -> setindex_unrolled(x, axes(parent), indexed) |>
+        x -> setindex_unrolled(x, axes(first(parent)), not.(indexed))
+end
+size(f::FlattenedArray) = length.(axes(f))
+IndexStyle(f::FlattenedArray) = IndexStyle(f.parent)
+@propagate_inbounds function Base.getindex(f::FlattenedArray{T, N}, i::Vararg{Int, N}) where {T, N}
+    indexed = f.indexed
+    f.parent[getindex_unrolled(i, indexed)...][getindex_unrolled(i, not.(indexed))...]
+end
+
+default_code(nested_array::AbstractArray{<:AbstractArray{T, N}, M}) where {T, N, M} =
+    (ntuple(x -> (*), Val(M))..., ntuple(x -> (:), Val(N))...)
+
+FlattenedArray(
+    a::AbstractArray{<:AbstractArray{T, N}, M},
+    indexed
+) where {T, N, M} =
+    FlattenedArray{T, N + M, typeof(a), typeof(indexed)}(a, indexed)
+
 """
-    align(slices, code)
+    flatten(a::AbstractArray{<:AbstractArray}, code = default_code(a))
 
 Align an array of slices into a larger array. Code should be a tuple with an
 entry for each dimension of the desired output. Slices will slide into
 dimensions coded by `:`, while `*` indicates dimensions taken up by the
-container array. Each slice should be EXACTLY the same size.
+container array. Each slice should be EXACTLY the same size. The default
+code will be `*` for each outer dimension followed by `:` for each inner
+dimension.
 
 ```jldoctest
 julia> using JuliennedArrays, MappedArrays
@@ -112,30 +150,26 @@ julia> array = [5 6 4; 1 3 2]
  5  6  4
  1  3  2
 
-julia> views = julienne(array, code);
+julia> f = mappedarray(sort, julienne(array, code)) |> flatten
+2×3 JuliennedArrays.FlattenedArray{Int64,2,ReadonlyMappedArray{Array{Int64,1},1,JuliennedArrays.Views{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},JuliennedArrays.JulienneIndexer{Tuple{Int64,Base.OneTo{Int64}},1,Tuple{Base.OneTo{Int64},Base.OneTo{Int64}},Tuple{Keys.True,Keys.False}}},typeof(sort)},Tuple{Keys.True,Keys.False}}:
+ 4  5  6
+ 1  2  3
 
-julia> align(mappedarray(sort, views), code)
+julia> collect(f)
 2×3 Array{Int64,2}:
  4  5  6
  1  2  3
 ```
 """
-function align(input_slices::AbstractArray{<: AbstractArray}, code)
-    indexed = is_indexed.(code)
-    first_input_slice = first(input_slices)
-    trivial = Base.OneTo(1)
+flatten(a::AbstractArray{<:AbstractArray}, code = default_code(a)) =
+    FlattenedArray(a, is_indexed.(code))
 
-    output_indexes =
-        fill_tuple(indexed, trivial) |>
-        x -> setindex_unrolled(x, axes(input_slices), indexed) |>
-        x -> setindex_unrolled(x, axes(first_input_slice), not.(indexed))
-
-    output = similar(first_input_slice, output_indexes...)
-    output_slices = julienne(output, code)
-
-    output_slices[1] = first_input_slice
-    for i in Iterators.Drop(eachindex(input_slices), 1)
-        output_slices[i] = input_slices[i]
+function collect(f::FlattenedArray)
+    aparent = f.parent
+    output = similar(f)
+    output_slices = julienne(output, f.indexed)
+    for i in eachindex(aparent)
+        output_slices[i] = aparent[i]
     end
     output
 end
