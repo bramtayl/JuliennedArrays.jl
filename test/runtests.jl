@@ -1,14 +1,9 @@
 using JuliennedArrays
+import Documenter: makedocs
 
-import Documenter
-Documenter.makedocs(
+makedocs(
     modules = [JuliennedArrays],
-    format = :html,
     sitename = "JuliennedArrays.jl",
-    root = joinpath(dirname(dirname(@__FILE__)), "docs"),
-    pages = Any["Home" => "index.md"],
-    strict = true,
-    linkcheck = true,
-    checkdocs = :exports,
-    authors = "Brandon Taylor"
+    root = joinpath(dirname(@__DIR__), "docs"),
+    strict = true
 )
