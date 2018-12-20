@@ -1,6 +1,6 @@
 module JuliennedArrays
 
-import Base: length, axes, setindex!, getindex, @propagate_inbounds, map, collect, size
+import Base: length, axes, setindex!, getindex, @propagate_inbounds, collect, size, Generator, promote_op
 import Base.Iterators: flatten
 export flatten
 using Keys: getindex_unrolled, setindex_unrolled, find_unrolled, True, False,
@@ -13,13 +13,15 @@ untuple(t) = t
 untuple(t::Tuple{A} where A) = first(t)
 
 struct Views{T, N, A, I} <: AbstractArray{T, N}
-    array::A
+    parent::A
     locations::I
 end
 
+inner_eltype(array, locations) = view(array, maybe_tuple(first(locations))...)
+
 Views(array::AbstractArray, locations::AbstractArray) =
     Views{
-        typeof(@view array[maybe_tuple(first(locations))...]),
+        promote_op(inner_eltype, typeof(array), typeof(locations)),
         ndims(locations),
         typeof(array),
         typeof(locations)
@@ -30,10 +32,10 @@ size(v::Views) = size(v.locations)
 length(v::Views) = length(v.locations)
 
 @propagate_inbounds getindex(views::Views{T, N}, index::Vararg{Int, N}) where {T, N} =
-    @view views.array[maybe_tuple(views.locations[index...])...]
+    view(views.parent, maybe_tuple(views.locations[index...])...)
 
 @propagate_inbounds Base.setindex!(views::Views, replacement, index::Vararg{Int, N}) where {T, N} =
-    views.array[maybe_tuple(views.locations[index...])...] = replacement
+    views.parent[maybe_tuple(views.locations[index...])...] = replacement
 
 struct JulienneIndexer{T, N, IS, ID} <: AbstractArray{T, N}
     indexes::IS
@@ -76,7 +78,7 @@ export julienne
 """
     julienne(array, code)
 
-Slice an array and create views. The code should a tuple of length
+Slice `array` and create views. The code should a tuple of length
 `ndims(array)`, where `:` indicates an axis parallel to slices and `*` axes an
 axis perpendicular to slices.
 
@@ -99,7 +101,7 @@ julia> map(sum, julienne(array, (*, :)))
 julienne(array, code) =
     Views(array, JulienneIndexer(axes(array), is_indexed.(code)))
 
-
+"Parent is required to have at least one child"
 struct FlattenedArray{T, N, Parent, Indexed} <: AbstractArray{T, N}
     parent::Parent
     indexed::Indexed
@@ -109,10 +111,10 @@ const trivial = Base.OneTo(1)
 
 function axes(f::FlattenedArray)
     indexed = f.indexed
-    parent = f.parent
+    array = f.parent
     fill_tuple(indexed, trivial) |>
-        x -> setindex_unrolled(x, axes(parent), indexed) |>
-        x -> setindex_unrolled(x, axes(first(parent)), not.(indexed))
+        x -> setindex_unrolled(x, axes(array), indexed) |>
+        x -> setindex_unrolled(x, axes(first(array)), not.(indexed))
 end
 size(f::FlattenedArray) = length.(axes(f))
 IndexStyle(f::FlattenedArray) = IndexStyle(f.parent)
@@ -145,12 +147,12 @@ julia> using JuliennedArrays, MappedArrays
 
 julia> code = (*, :);
 
-julia> array = [5 6 4; 1 3 2]
+julia> parent = [5 6 4; 1 3 2]
 2×3 Array{Int64,2}:
  5  6  4
  1  3  2
 
-julia> f = mappedarray(sort, julienne(array, code)) |> flatten
+julia> f = mappedarray(sort, julienne(parent, code)) |> flatten
 2×3 JuliennedArrays.FlattenedArray{Int64,2,ReadonlyMappedArray{Array{Int64,1},1,JuliennedArrays.Views{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},JuliennedArrays.JulienneIndexer{Tuple{Int64,Base.OneTo{Int64}},1,Tuple{Base.OneTo{Int64},Base.OneTo{Int64}},Tuple{Keys.True,Keys.False}}},typeof(sort)},Tuple{Keys.True,Keys.False}}:
  4  5  6
  1  2  3
@@ -164,13 +166,11 @@ julia> collect(f)
 flatten(a::AbstractArray{<:AbstractArray}, code = default_code(a)) =
     FlattenedArray(a, is_indexed.(code))
 
-function collect(f::FlattenedArray)
-    aparent = f.parent
+@propagate_inbounds function collect(f::FlattenedArray)
+    arrays = f.parent
     output = similar(f)
     output_slices = julienne(output, f.indexed)
-    for i in eachindex(aparent)
-        output_slices[i] = aparent[i]
-    end
+    output_slices .= arrays
     output
 end
 
@@ -183,19 +183,19 @@ Reduction of another function. Enables optimizations in some cases.
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> array = [5 6 4; 1 3 2; 7 9 8]
+julia> parent = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
  5  6  4
  1  3  2
  7  9  8
 
-julia> map(Reduce(+), julienne(array, (*, :)))
+julia> map(Reduce(+), julienne(parent, (*, :)))
 3×1 Array{Int64,2}:
  15
   6
  24
 
-julia> array = reshape(1:8, 2, 2, 2)
+julia> parent = reshape(1:8, 2, 2, 2)
 2×2×2 reshape(::UnitRange{Int64}, 2, 2, 2) with eltype Int64:
 [:, :, 1] =
  1  3
@@ -205,7 +205,7 @@ julia> array = reshape(1:8, 2, 2, 2)
  5  7
  6  8
 
-julia> map(Reduce(+), julienne(array, (:, *, :)))
+julia> map(Reduce(+), julienne(parent, (:, *, :)))
 1×2×1 Array{Int64,3}:
 [:, :, 1] =
  14  22
@@ -215,12 +215,14 @@ struct Reduce{F}
     f::F
 end
 
-(r::Reduce)(x) = r.f(x)
+(r::Reduce)(x) = reduce(r.f, x)
 
 export JuliennedArray
 const JuliennedArray = Views{T, N, A, I} where {T, N, A, I <: JulienneIndexer}
 
-map(r::Reduce, s::JuliennedArray) =
-    mapreduce(identity, r.f, s.array, dims = colon_dimensions(s.locations))
+function collect(g::Generator{J, R}) where {J <: JuliennedArray, R <: Reduce}
+    parent = g.iter
+    mapreduce(identity,  g.f.f, parent.parent, dims = colon_dimensions(parent.locations))
+end
 
 end

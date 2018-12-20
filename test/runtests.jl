@@ -1,5 +1,5 @@
-using JuliennedArrays
-import Documenter: makedocs
+import JuliennedArrays
+using Documenter: makedocs
 
 makedocs(
     modules = [JuliennedArrays],

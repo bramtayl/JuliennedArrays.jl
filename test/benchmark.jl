@@ -1,37 +1,54 @@
 using BenchmarkTools, JuliennedArrays, MappedArrays
 
-const array = reshape(1:9, 3, 3)
+const small_array = [1 3 2; 4 6 5; 7 9 8]
 const big_array = rand(1000, 1000)
 const code = (:, *)
 
-sum_view_test(array) = map(sum, julienne(Views, array, code))
-sum_test(array) = map(sum, julienne(Swaps, array, code))
-sum_non_optimized_test(array) = map(x -> sum(+, x), julienne(Swaps, array, code))
-sort_test(array) = align(mappedarray(sort, julienne(Swaps, array, code)), code)
-sort_view_test(array) = align(mappedarray(sort, julienne(Views, array, code)), code)
+sum_test(array) = map(sum, julienne(array, code))
+function sort_test(array)
+    f = mappedarray(sort, julienne(array, code)) |> flatten
+    @inbounds collect(f)
+end
 
 println("map, small")
-@btime @inbounds mapslices(sum, array, 1)
-@btime @inbounds sum_non_optimized_test(array)
-@btime @inbounds sum_view_test(array)
-@btime @inbounds sum_test(array)
-@btime @inbounds sum(array, 1)
+@btime @inbounds mapslices(sum, small_array; dims = 1);
+@btime sum_test(small_array);
+@btime @inbounds sum(small_array; dims = 1);
 
 println("map, big")
-@btime @inbounds mapslices(sum, big_array, 1)
-@btime @inbounds sum_non_optimized_test(big_array)
-@btime @inbounds sum_view_test(big_array)
-@btime @inbounds sum_test(big_array)
-@btime @inbounds sum(big_array, 1)
+@btime @inbounds mapslices(sum, big_array; dims = 1);
+@btime sum_test(big_array);
+@btime @inbounds sum(big_array; dims = 1);
 
 println("combine, small")
-@btime @inbounds mapslices(sort, array, 1)
-@btime @inbounds sort_test(array)
-@btime @inbounds sort_view_test(array)
-@btime @inbounds sort(array, 1)
+@btime @inbounds mapslices(sort, small_array; dims = 1);
+@btime sort_test(small_array);
 
 println("combine, large")
-@btime @inbounds mapslices(sort, big_array, 1)
-@btime @inbounds sort_test(big_array)
-@btime @inbounds sort_view_test(big_array)
-@btime @inbounds sort(big_array, 1)
+@btime @inbounds mapslices(sort, big_array; dims = 1);
+@btime sort_test(big_array);
+
+function profile_test(f, a, n)
+    for i in 1:n
+        f(a)
+    end
+end
+
+using Profile: @profile, clear
+import ProfileView
+
+clear()
+@profile profile_test(sum_test, small_array, 10000)
+ProfileView.view()
+
+clear()
+@profile profile_test(sort_test, small_array, 10000)
+ProfileView.view()
+
+clear()
+@profile profile_test(sum_test, big_array, 10000)
+ProfileView.view()
+
+clear()
+@profile profile_test(sort_test, big_array, 10000)
+ProfileView.view()

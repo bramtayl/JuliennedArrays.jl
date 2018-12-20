@@ -16,4 +16,4 @@ jobs:
       os: linux
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
-        - julia --project=docs/ docs/docs.jl
+        - JULIA_DEBUG=all julia --project=docs/ docs/docs.jl
