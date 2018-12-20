@@ -3,7 +3,9 @@ os: linux
 julia:
   - 1.0
   - nightly
-email: false
+notifications:
+  email: false
+codecov: true
 matrix:
   allow_failures:
   - julia: 1.0
@@ -15,9 +17,3 @@ jobs:
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate()'
         - julia --project=docs/ docs/docs.jl
-    - stage: "Coverage"
-      julia: nightly
-      os: linux
-      script:
-        - julia --project=coverage/ -e 'using Pkg; Pkg.instantiate()'
-        - julia --project=coverage/ coverage/coverage.jl
