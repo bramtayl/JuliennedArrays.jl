@@ -1,6 +1,6 @@
 module JuliennedArrays
 
-import Base: length, axes, setindex!, getindex, @propagate_inbounds, collect, size, Generator, promote_op
+import Base: length, axes, setindex!, getindex, @propagate_inbounds, collect, size, Generator, promote_op, map
 import Base.Iterators: flatten
 export flatten
 using Keys: getindex_unrolled, setindex_unrolled, find_unrolled, True, False,
@@ -147,12 +147,12 @@ julia> using JuliennedArrays, MappedArrays
 
 julia> code = (*, :);
 
-julia> parent = [5 6 4; 1 3 2]
+julia> array = [5 6 4; 1 3 2]
 2×3 Array{Int64,2}:
  5  6  4
  1  3  2
 
-julia> f = mappedarray(sort, julienne(parent, code)) |> flatten
+julia> f = mappedarray(sort, julienne(array, code)) |> flatten
 2×3 JuliennedArrays.FlattenedArray{Int64,2,ReadonlyMappedArray{Array{Int64,1},1,JuliennedArrays.Views{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},JuliennedArrays.JulienneIndexer{Tuple{Int64,Base.OneTo{Int64}},1,Tuple{Base.OneTo{Int64},Base.OneTo{Int64}},Tuple{Keys.True,Keys.False}}},typeof(sort)},Tuple{Keys.True,Keys.False}}:
  4  5  6
  1  2  3
@@ -183,19 +183,19 @@ Reduction of another function. Enables optimizations in some cases.
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> parent = [5 6 4; 1 3 2; 7 9 8]
+julia> array = [5 6 4; 1 3 2; 7 9 8]
 3×3 Array{Int64,2}:
  5  6  4
  1  3  2
  7  9  8
 
-julia> map(Reduce(+), julienne(parent, (*, :)))
+julia> map(Reduce(+), julienne(array, (*, :)))
 3×1 Array{Int64,2}:
  15
   6
  24
 
-julia> parent = reshape(1:8, 2, 2, 2)
+julia> array = reshape(1:8, 2, 2, 2)
 2×2×2 reshape(::UnitRange{Int64}, 2, 2, 2) with eltype Int64:
 [:, :, 1] =
  1  3
@@ -205,7 +205,7 @@ julia> parent = reshape(1:8, 2, 2, 2)
  5  7
  6  8
 
-julia> map(Reduce(+), julienne(parent, (:, *, :)))
+julia> map(Reduce(+), julienne(array, (:, *, :)))
 1×2×1 Array{Int64,3}:
 [:, :, 1] =
  14  22
@@ -220,9 +220,7 @@ end
 export JuliennedArray
 const JuliennedArray = Views{T, N, A, I} where {T, N, A, I <: JulienneIndexer}
 
-function collect(g::Generator{J, R}) where {J <: JuliennedArray, R <: Reduce}
-    parent = g.iter
-    mapreduce(identity,  g.f.f, parent.parent, dims = colon_dimensions(parent.locations))
-end
+map(r::Reduce, j::JuliennedArray) =
+    mapreduce(identity, r.f, j.parent, dims = colon_dimensions(j.locations))
 
 end
