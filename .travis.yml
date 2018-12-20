@@ -3,6 +3,7 @@ os: linux
 julia:
   - 1.0
   - nightly
+email: false
 matrix:
   allow_failures:
   - julia: 1.0

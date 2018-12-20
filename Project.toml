@@ -4,3 +4,10 @@ repo = "https://github.com/bramtayl/JuliennedArrays.jl.git"
 
 [deps]
 Keys = "25c06242-cc58-593c-a204-a17bebfb33b5"
+
+[extras]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+MappedArrays = "dbb5928d-eab1-5f90-85c2-b9b0edb7c900"
+
+[targets]
+test = ["Documenter", "MappedArrays"]
