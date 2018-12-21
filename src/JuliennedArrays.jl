@@ -1,10 +1,10 @@
 module JuliennedArrays
 
-import Base: length, axes, setindex!, getindex, @propagate_inbounds, collect, size, Generator, promote_op, map
+import Base: length, axes, setindex!, getindex, @propagate_inbounds, collect, size, Generator, promote_op, map, @pure
 import Base.Iterators: flatten
 export flatten
 using Keys: getindex_unrolled, setindex_unrolled, find_unrolled, True, False,
-    not, fill_tuple, filter_unrolled
+    not, fill_tuple, filter_unrolled, TypedBool
 
 struct Views{T, N, A, I} <: AbstractArray{T, N}
     parent::A
@@ -30,6 +30,10 @@ length(v::Views) = length(v.locations)
 
 @propagate_inbounds Base.setindex!(views::Views, replacement, index::Vararg{Int, N}) where {T, N} =
     views.parent[views.locations[index...]...] = replacement
+
+is_indexed(t::TypedBool) = t
+is_indexed(::typeof(*)) = True()
+is_indexed(::typeof(:)) = False()
 
 struct JulienneIndexer{T, N, IS, ID} <: AbstractArray{T, N}
     indexes::IS
@@ -62,11 +66,6 @@ drop_tuple(t) = t
 
 colon_dimensions(j::JulienneIndexer) =
     drop_tuple(find_unrolled(not.(j.indexed)))
-
-is_indexed(::typeof(*)) = True()
-is_indexed(::typeof(:)) = False()
-is_indexed(::True) = True()
-is_indexed(::False) = False()
 
 export julienne
 """
@@ -166,54 +165,5 @@ flatten(a::AbstractArray{<:AbstractArray}, code = default_code(a)) =
     output_slices .= arrays
     output
 end
-
-export Reduce
-"""
-    struct Reduce{F}
-
-Reduction of another function. Enables optimizations in some cases.
-
-```jldoctest
-julia> using JuliennedArrays
-
-julia> array = [5 6 4; 1 3 2; 7 9 8]
-3×3 Array{Int64,2}:
- 5  6  4
- 1  3  2
- 7  9  8
-
-julia> map(Reduce(+), julienne(array, (*, :)))
-3×1 Array{Int64,2}:
- 15
-  6
- 24
-
-julia> array = reshape(1:8, 2, 2, 2)
-2×2×2 reshape(::UnitRange{Int64}, 2, 2, 2) with eltype Int64:
-[:, :, 1] =
- 1  3
- 2  4
-
-[:, :, 2] =
- 5  7
- 6  8
-
-julia> map(Reduce(+), julienne(array, (:, *, :)))
-1×2×1 Array{Int64,3}:
-[:, :, 1] =
- 14  22
-```
-"""
-struct Reduce{F}
-    f::F
-end
-
-(r::Reduce)(x) = reduce(r.f, x)
-
-export JuliennedArray
-const JuliennedArray = Views{T, N, A, I} where {T, N, A, I <: JulienneIndexer}
-
-map(r::Reduce, j::JuliennedArray) =
-    mapreduce(identity, r.f, j.parent, dims = colon_dimensions(j.locations))
 
 end
