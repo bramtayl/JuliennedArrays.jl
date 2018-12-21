@@ -6,18 +6,12 @@ export flatten
 using Keys: getindex_unrolled, setindex_unrolled, find_unrolled, True, False,
     not, fill_tuple, filter_unrolled
 
-maybe_tuple(t::Tuple) = t
-maybe_tuple(any) = (any,)
-
-untuple(t) = t
-untuple(t::Tuple{A} where A) = first(t)
-
 struct Views{T, N, A, I} <: AbstractArray{T, N}
     parent::A
     locations::I
 end
 
-inner_eltype(array, locations) = view(array, maybe_tuple(first(locations))...)
+inner_eltype(array, locations) = view(array, first(locations)...)
 
 Views(array::AbstractArray, locations::AbstractArray) =
     Views{
@@ -32,10 +26,10 @@ size(v::Views) = size(v.locations)
 length(v::Views) = length(v.locations)
 
 @propagate_inbounds getindex(views::Views{T, N}, index::Vararg{Int, N}) where {T, N} =
-    view(views.parent, maybe_tuple(views.locations[index...])...)
+    view(views.parent, views.locations[index...]...)
 
 @propagate_inbounds Base.setindex!(views::Views, replacement, index::Vararg{Int, N}) where {T, N} =
-    views.parent[maybe_tuple(views.locations[index...])...] = replacement
+    views.parent[views.locations[index...]...] = replacement
 
 struct JulienneIndexer{T, N, IS, ID} <: AbstractArray{T, N}
     indexes::IS

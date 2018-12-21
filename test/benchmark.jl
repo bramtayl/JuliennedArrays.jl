@@ -1,4 +1,7 @@
-using BenchmarkTools, JuliennedArrays, MappedArrays
+using Base.Iterators: flatten
+using BenchmarkTools: @btime
+using JuliennedArrays: julienne
+using MappedArrays: mappedarray
 
 const small_array = [1 3 2; 4 6 5; 7 9 8]
 const big_array = rand(1000, 1000)
@@ -46,7 +49,7 @@ clear()
 ProfileView.view()
 
 clear()
-@profile profile_test(sum_test, big_array, 10000)
+@profile profile_test(sum_test, big_array, 100000)
 ProfileView.view()
 
 clear()
