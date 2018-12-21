@@ -6,9 +6,6 @@ julia:
 notifications:
   email: false
 codecov: true
-matrix:
-  allow_failures:
-  - julia: 1.0
 jobs:
   include:
     - stage: "Documentation"
