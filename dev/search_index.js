@@ -33,14 +33,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#JuliennedArrays.FlattenedArray",
-    "page": "JuliennedArrays.jl",
-    "title": "JuliennedArrays.FlattenedArray",
-    "category": "type",
-    "text": "Parent is required to have at least one child\n\n\n\n\n\n"
-},
-
-{
     "location": "#JuliennedArrays.jl-1",
     "page": "JuliennedArrays.jl",
     "title": "JuliennedArrays.jl",
