@@ -95,7 +95,6 @@ julia> map(sum, julienne(array, (*, :)))
 julienne(array, code) =
     Views(array, JulienneIndexer(axes(array), is_indexed.(code)))
 
-"Parent is required to have at least one child"
 struct FlattenedArray{T, N, Parent, Indexed} <: AbstractArray{T, N}
     parent::Parent
     indexed::Indexed
