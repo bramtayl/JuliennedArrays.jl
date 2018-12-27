@@ -6,11 +6,3 @@ julia:
 notifications:
   email: false
 codecov: true
-jobs:
-  include:
-    - stage: "Documentation"
-      julia: nightly
-      os: linux
-      script:
-        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
-        - julia --project=docs/ docs/make.jl
