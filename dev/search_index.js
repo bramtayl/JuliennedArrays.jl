@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "JuliennedArrays.jl",
     "title": "JuliennedArrays.Align",
     "category": "method",
-    "text": "Align(it, along...)\n\njulia> using JuliennedArrays\n\njulia> array = [[1, 2], [3, 4]];\n\njulia> aligned = Align(array, False(), True());\n\njulia> aligned[1, 1] = 5;\n\njulia> collect(aligned)\n2×2 Array{Int64,2}:\n 5  2\n 3  4\n\n\n\n\n\n"
+    "text": "Align(it, along...)\n\njulia> using JuliennedArrays\n\njulia> array = [[1, 2], [3, 4]];\n\njulia> aligned = Align(array, False(), True())\n2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:\n 1  2\n 3  4\n\njulia> aligned[1, 1] = 5;\n\njulia> collect(aligned)\n2×2 Array{Int64,2}:\n 5  2\n 3  4\n\n\n\n\n\n"
 },
 
 {
@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "JuliennedArrays.jl",
     "title": "JuliennedArrays.False",
     "category": "type",
-    "text": "struct False\n\nfalse\n\n\n\n\n\n"
+    "text": "struct False\n\n\n\n\n\n"
 },
 
 {
@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "JuliennedArrays.jl",
     "title": "JuliennedArrays.True",
     "category": "type",
-    "text": "struct True\n\ntrue\n\n\n\n\n\n"
+    "text": "struct True\n\n\n\n\n\n"
 },
 
 {
