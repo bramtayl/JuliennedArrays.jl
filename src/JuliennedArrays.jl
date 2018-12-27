@@ -9,16 +9,12 @@ abstract type TypedBool end
 
 """
     struct True
-
-true
 """
 struct True <: TypedBool end
 export True
 
 """
     struct False
-
-false
 """
 struct False <: TypedBool end
 export False
@@ -76,17 +72,6 @@ end
     ] = value
 end
 
-function first_piece(it, along)
-    view(it, map(
-        (switch, axis) ->
-            if Bool(switch)
-                axis
-            else
-                1
-            end,
-        along, axes(it)
-    )...)
-end
 
 """
     Slices(array, code...)
@@ -104,7 +89,18 @@ julia> Slices(it, False(), True())
 """
 function Slices(it, along...)
     Slices{
-        promote_op(first_piece, typeof(it), typeof(along)),
+        promote_op(
+            (it, along) -> view(it, map(
+                (switch, axis) ->
+                    if Bool(switch)
+                        axis
+                    else
+                        1
+                    end,
+                along, axes(it)
+            )...),
+            typeof(it), typeof(along)
+        ),
         length(getindex(along, not.(along))),
         typeof(it),
         typeof(along)
@@ -148,7 +144,10 @@ julia> using JuliennedArrays
 
 julia> array = [[1, 2], [3, 4]];
 
-julia> aligned = Align(array, False(), True());
+julia> aligned = Align(array, False(), True())
+2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:
+ 1  2
+ 3  4
 
 julia> aligned[1, 1] = 5;
 
