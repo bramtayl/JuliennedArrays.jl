@@ -129,7 +129,7 @@ end
 """
     Align(it, along...)
 
-`Align` an array of arrays, all with the same size. `along` shows which dimensions will be taken up by the inner arrays. Inverse of [`Slice`](@ref).
+`Align` an array of arrays, all with the same size. `along` shows which dimensions will be taken up by the inner arrays. Inverse of [`Slices`](@ref).
 
 ```jldoctest
 julia> using JuliennedArrays
