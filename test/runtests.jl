@@ -1,4 +1,4 @@
-import JuliennedArrays
+using JuliennedArrays
 using Documenter: makedocs, deploydocs
 
 makedocs(
