@@ -1,21 +1,29 @@
 module JuliennedArrays
 
+export True, False, Slices, Align
+
 import Base: axes, setindex!, getindex, collect, size, Bool, setindex
 using Base: @propagate_inbounds, OneTo,  promote_op, tail
 
 const More{N, T} = Tuple{T, Vararg{T, N}}
 
 abstract type TypedBool end
+
 """
     struct True
+
+A placeholder for having a `:` in the along a particular axis. See [`Slices`](@ref),
+[`Align`](@ref).
 """
 struct True <: TypedBool end
-export True
+
 """
     struct False
+
+A placeholder for using the given index (as opposed to a `:`) along a particular axis. See
+[`Slices`](@ref), [`Align`](@ref).
 """
 struct False <: TypedBool end
-export False
 
 @inline Bool(::True) = true
 @inline Bool(::False) = false
@@ -64,9 +72,10 @@ end
     ] = value
 end
 """
-    Slices(array, code...)
+    Slices(array, along...)
 
-Slice array into `view`s. `code` shows which dimensions will be replaced with `:` when slicing.
+Slice array into `view`s. `along`, composed of [`True`](@ref) and [`False`](@ref) objects,
+shows which dimensions will be replaced with `:` when slicing.
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -101,10 +110,8 @@ function Slices(it, along...)
         typeof(along)
     }(it, along)
 end
-export Slices
 
-struct Align{T, N, Parent, Along} <:
-    AbstractArray{T, N}
+struct Align{T, N, Parent, Along} <: AbstractArray{T, N}
     parent::Parent
     along::Along
 end
@@ -129,7 +136,9 @@ end
 """
     Align(it, along...)
 
-`Align` an array of arrays, all with the same size. `along` shows which dimensions will be taken up by the inner arrays. Inverse of [`Slices`](@ref).
+`Align` an array of arrays, all with the same size. `along`, composed of [`True`](@ref) and
+[`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays.
+Inverse of [`Slices`](@ref).
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -148,6 +157,5 @@ true
 function Align(it::AbstractArray{<:AbstractArray{T, N}, M}, along...) where {T, N, M}
     Align{T, N + M, typeof(it), typeof(along)}(it, along)
 end
-export Align
 
 end
