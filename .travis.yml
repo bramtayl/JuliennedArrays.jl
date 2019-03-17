@@ -9,15 +9,15 @@ notifications:
 codecov: true
 
 # deploy documentation
-jobs:
-  include:
-    - stage: Documentation
-      julia: 1.0
-      os: linux
-      script:
-        - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
-        - julia --project=docs --color=yes docs/make.jl
-      after_success: skip
+# jobs:
+#   include:
+#     - stage: Documentation
+#       julia: 1.1
+#       os: linux
+#       script:
+#         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
+#         - julia --project=docs --color=yes docs/make.jl
+#       after_success: skip
 
 # submit coverage
 after_success:
