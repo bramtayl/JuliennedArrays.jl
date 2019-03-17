@@ -6,4 +6,6 @@ julia:
   - nightly
 notifications:
   email: false
-codecov: true
+after_success:
+  - julia --project=test/coverage -e 'using Pkg; Pkg.instantiate()'
+  - julia --project=test/coverage test/coverage/coverage.jl
