@@ -1,38 +1,32 @@
 module JuliennedArrays
 
-export True, False, Slices, Align
-
 import Base: axes, setindex!, getindex, collect, size, Bool, setindex
-using Base: @propagate_inbounds, OneTo,  promote_op, tail
+using Base: @propagate_inbounds, OneTo, promote_op, tail
 
-const More{N, T} = Tuple{T, Vararg{T, N}}
+const More{Number, Item} = Tuple{Item, Vararg{Item, Number}}
 
 abstract type TypedBool end
-
 """
     struct True
 
-A placeholder for having a `:` in the along a particular axis. See [`Slices`](@ref),
-[`Align`](@ref).
+Typed `true`
 """
 struct True <: TypedBool end
-
 """
     struct False
 
-A placeholder for using the given index (as opposed to a `:`) along a particular axis. See
-[`Slices`](@ref), [`Align`](@ref).
+Typed `false`
 """
 struct False <: TypedBool end
-
 @inline Bool(::True) = true
 @inline Bool(::False) = false
-
 not(::False) = True()
 not(::True) = False()
+export True
+export False
 
 getindex(into::Tuple{}, switch::Tuple{}) = ()
-function getindex(into::More{N, Any}, switch::More{N, TypedBool}) where {N}
+function getindex(into::More{Number, Any}, switch::More{Number, TypedBool}) where {Number}
     next = getindex(tail(into), tail(switch))
     if Bool(first(switch))
         (first(into), next...)
@@ -41,7 +35,7 @@ function getindex(into::More{N, Any}, switch::More{N, TypedBool}) where {N}
     end
 end
 setindex(old::Tuple{}, ::Tuple, ::Tuple{}) = ()
-function setindex(old::More{N, Any}, new::Tuple, switch::More{N, TypedBool}) where {N}
+function setindex(old::More{Number, Any}, new::Tuple, switch::More{Number, TypedBool}) where {Number}
     first_tuple, tail_tuple =
         if Bool(first(switch))
             (first(new), tail(new))
@@ -50,32 +44,23 @@ function setindex(old::More{N, Any}, new::Tuple, switch::More{N, TypedBool}) whe
         end
     (first_tuple, setindex(tail(old), tail_tuple, tail(switch))...)
 end
-struct Slices{ElementType, NumberOfDimensions, Parent, Along} <:
-    AbstractArray{ElementType, NumberOfDimensions}
+
+struct Slices{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions}
     parent::Parent
     along::Along
 end
-function axes(it::Slices)
-    getindex(axes(it.parent), not.(it.along))
-end
-function size(it::Slices)
-    length.(axes(it))
-end
-@propagate_inbounds function getindex(it::Slices, index...)
-    parent = it.parent
-    view(parent, setindex(axes(parent), index, not.(it.along))...)
-end
-@propagate_inbounds function setindex!(it::Slices, value, index...)
-    parent = it.parent
-    parent[
-        setindex(axes(parent), index, not.(it.along))...
-    ] = value
-end
+axes(it::Slices) = getindex(axes(it.parent), not.(it.along))
+size(it::Slices) = length.(axes(it))
+@propagate_inbounds getindex(it::Slices, index...) =
+    view(it.parent, setindex(axes(it.parent), index, not.(it.along))...)
+@propagate_inbounds setindex!(it::Slices, value, index...) =
+    it.parent[setindex(axes(it.parent), index, not.(it.along))...] = value
 """
     Slices(array, along...)
 
-Slice array into `view`s. `along`, composed of [`True`](@ref) and [`False`](@ref) objects,
-shows which dimensions will be replaced with `:` when slicing.
+Slice array into `view`s.
+
+`along`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be replaced with `:` when slicing.
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -89,6 +74,13 @@ julia> slices = Slices(it, False(), True())
 
 julia> slices[1] == it[1, :]
 true
+
+julia> slices[1] = [2, 1];
+
+julia> it
+2×2 Array{Int64,2}:
+ 2  1
+ 3  4
 ```
 """
 function Slices(it, along...)
@@ -110,35 +102,26 @@ function Slices(it, along...)
         typeof(along)
     }(it, along)
 end
+export Slices
 
-struct Align{T, N, Parent, Along} <: AbstractArray{T, N}
+struct Align{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions}
     parent::Parent
     along::Along
 end
-function axes(it::Align)
-    array = it.parent
-    along = it.along
-    ntuple(x -> OneTo(1), length(along)) |>
-        x -> setindex(x, axes(first(array)), along) |>
-        x -> setindex(x, axes(array), not.(along))
-end
-function size(it::Align)
-    length.(axes(it))
-end
-@propagate_inbounds function getindex(it::Align, index...)
-    along = it.along
-    it.parent[getindex(index, not.(along))...][getindex(index, along)...]
-end
-@propagate_inbounds function setindex!(it::Align, value, index...)
-    along = it.along
-    it.parent[getindex(index, not.(along))...][getindex(index, along)...] = value
-end
+axes(it::Align) = ntuple(x -> OneTo(1), length(it.along)) |>
+    x -> setindex(x, axes(first(it.parent)), it.along) |>
+    x -> setindex(x, axes(it.parent), not.(it.along))
+size(it::Align) = length.(axes(it))
+@propagate_inbounds getindex(it::Align, index...) =
+    it.parent[getindex(index, not.(it.along))...][getindex(index, it.along)...]
+@propagate_inbounds setindex!(it::Align, value, index...) =
+    it.parent[getindex(index, not.(it.along))...][getindex(index, it.along)...] = value
 """
     Align(it, along...)
 
-`Align` an array of arrays, all with the same size. `along`, composed of [`True`](@ref) and
-[`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays.
-Inverse of [`Slices`](@ref).
+`Align` an array of arrays, all with the same size.
+
+`along`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays. Inverse of [`Slices`](@ref).
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -152,10 +135,17 @@ julia> aligned = Align(array, False(), True())
 
 julia> aligned[1, :] == array[1]
 true
+
+julia> aligned[1, 1] = 0;
+
+julia> array
+2-element Array{Array{Int64,1},1}:
+ [0, 2]
+ [3, 4]
 ```
 """
-function Align(it::AbstractArray{<:AbstractArray{T, N}, M}, along...) where {T, N, M}
-    Align{T, N + M, typeof(it), typeof(along)}(it, along)
-end
+Align(it::AbstractArray{<:AbstractArray{Item, Inner}, Outer}, along...) where {Item, Inner, Outer} =
+    Align{Item, Inner + Outer, typeof(it), typeof(along)}(it, along)
+export Align
 
 end

@@ -6,4 +6,3 @@ julia:
   - nightly
 notifications:
   email: false
-codecov: true
