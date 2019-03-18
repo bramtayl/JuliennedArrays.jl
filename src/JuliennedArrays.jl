@@ -1,6 +1,6 @@
 module JuliennedArrays
 
-import Base: axes, setindex!, getindex, collect, size, Bool, setindex
+import Base: axes, setindex!, getindex, collect, size, Bool, setindex, !
 using Base: @propagate_inbounds, OneTo, promote_op, tail
 
 const More{Number, Item} = Tuple{Item, Vararg{Item, Number}}
@@ -20,8 +20,8 @@ Typed `false`
 struct False <: TypedBool end
 @inline Bool(::True) = true
 @inline Bool(::False) = false
-not(::False) = True()
-not(::True) = False()
+!(::False) = True()
+!(::True) = False()
 export True
 export False
 
@@ -49,12 +49,12 @@ struct Slices{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions
     parent::Parent
     along::Along
 end
-axes(it::Slices) = getindex(axes(it.parent), not.(it.along))
+axes(it::Slices) = getindex(axes(it.parent), .!(it.along))
 size(it::Slices) = length.(axes(it))
 @propagate_inbounds getindex(it::Slices, index...) =
-    view(it.parent, setindex(axes(it.parent), index, not.(it.along))...)
+    view(it.parent, setindex(axes(it.parent), index, .!(it.along))...)
 @propagate_inbounds setindex!(it::Slices, value, index...) =
-    it.parent[setindex(axes(it.parent), index, not.(it.along))...] = value
+    it.parent[setindex(axes(it.parent), index, .!(it.along))...] = value
 """
     Slices(array, along...)
 
@@ -97,7 +97,7 @@ function Slices(it, along...)
             )...),
             typeof(it), typeof(along)
         ),
-        length(getindex(along, not.(along))),
+        length(getindex(along, .!(along))),
         typeof(it),
         typeof(along)
     }(it, along)
@@ -110,12 +110,12 @@ struct Align{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions}
 end
 axes(it::Align) = ntuple(x -> OneTo(1), length(it.along)) |>
     x -> setindex(x, axes(first(it.parent)), it.along) |>
-    x -> setindex(x, axes(it.parent), not.(it.along))
+    x -> setindex(x, axes(it.parent), .!(it.along))
 size(it::Align) = length.(axes(it))
 @propagate_inbounds getindex(it::Align, index...) =
-    it.parent[getindex(index, not.(it.along))...][getindex(index, it.along)...]
+    it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...]
 @propagate_inbounds setindex!(it::Align, value, index...) =
-    it.parent[getindex(index, not.(it.along))...][getindex(index, it.along)...] = value
+    it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...] = value
 """
     Align(it, along...)
 
