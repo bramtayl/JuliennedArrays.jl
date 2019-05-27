@@ -1,9 +1,16 @@
 module JuliennedArrays
 
-import Base: axes, setindex!, getindex, collect, size, Bool, setindex, !
-using Base: @propagate_inbounds, OneTo, promote_op, tail
+import Base: axes, getindex, setindex!, size
+using Base: promote_op, @propagate_inbounds, tail
 
-const More{Number, Item} = Tuple{Item, Vararg{Item, Number}}
+map_unrolled(call, variables::Tuple{}) = ()
+map_unrolled(call, variables) =
+    call(first(variables)), map_unrolled(call, tail(variables))...
+
+map_unrolled(call, variables1::Tuple{}, variables2::Tuple{}) = ()
+map_unrolled(call, variables1, variables2) =
+    call(first(variables1), first(variables2)),
+    map_unrolled(call, tail(variables1), tail(variables2))...
 
 abstract type TypedBool end
 """
@@ -18,103 +25,140 @@ struct True <: TypedBool end
 Typed `false`
 """
 struct False <: TypedBool end
-@inline Bool(::True) = true
-@inline Bool(::False) = false
-!(::False) = True()
-!(::True) = False()
+
+@inline untyped(::True) = true
+@inline untyped(::False) = false
+
+not(::False) = True()
+not(::True) = False()
+
 export True
 export False
 
-getindex(into::Tuple{}, switch::Tuple{}) = ()
-function getindex(into::More{Number, Any}, switch::More{Number, TypedBool}) where {Number}
-    next = getindex(tail(into), tail(switch))
-    if Bool(first(switch))
+getindex_unrolled(into::Tuple{}, switches::Tuple{}) = ()
+function getindex_unrolled(into, switches)
+    next = getindex_unrolled(tail(into), tail(switches))
+    if untyped(first(switches))
         (first(into), next...)
     else
         next
     end
 end
-setindex(old::Tuple{}, something, ::Tuple{}) = ()
-function setindex(old::More{Number, Any}, new::Tuple, switch::More{Number, TypedBool}) where {Number}
-    first_tuple, tail_tuple =
-        if Bool(first(switch))
-            (first(new), tail(new))
-        else
-            (first(old), new)
-        end
-    (first_tuple, setindex(tail(old), tail_tuple, tail(switch))...)
-end
 
-struct Slices{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions}
-    parent::Parent
+setindex_unrolled(old::Tuple{}, something, ::Tuple{}) = ()
+setindex_unrolled(old, new, switches) =
+    if untyped(first(switches))
+        first(new),
+        setindex_unrolled(tail(old), tail(new), tail(switches))...
+    else
+        first(old),
+        setindex_unrolled(tail(old), new, tail(switches))...
+    end
+
+struct Slices{Item, Dimensions, Whole, Along} <: AbstractArray{Item, Dimensions}
+    whole::Whole
     along::Along
 end
-axes(it::Slices) = getindex(axes(it.parent), .!(it.along))
-size(it::Slices) = length.(axes(it))
-@propagate_inbounds getindex(it::Slices, index::Int...) =
-    view(it.parent, setindex(axes(it.parent), index, .!(it.along))...)
-@propagate_inbounds setindex!(it::Slices, value, index::Int...) =
-    it.parent[setindex(axes(it.parent), index, .!(it.along))...] = value
-"""
-    Slices(array, along...)
+Slices{Item, Dimensions}(whole::Whole, along::Along) where {Item, Dimensions, Whole, Along} =
+    Slices{Item, Dimensions, Whole, Along}(whole, along)
 
-Slice array into `view`s.
+axes(sliced::Slices) =
+    getindex_unrolled(axes(sliced.whole), map_unrolled(not, sliced.along))
+size(sliced::Slices) = map_unrolled(length, axes(sliced))
+
+slice_index(sliced, indices) = setindex_unrolled(
+    axes(sliced.whole),
+    indices,
+    map_unrolled(not, sliced.along)
+)
+@propagate_inbounds getindex(sliced::Slices, indices::Int...) =
+    view(sliced.whole, slice_index(sliced, indices)...)
+@propagate_inbounds setindex!(sliced::Slices, value, indices::Int...) =
+    sliced.whole[slice_index(sliced, indices)...] = value
+
+axis_or_1(switch, axis) =
+    if untyped(switch)
+        axis
+    else
+        1
+    end
+"""
+    Slices(whole, along...)
+
+Slice `whole` into `view`s.
 
 `along`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be replaced with `:` when slicing.
 
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> it = [1 2; 3 4];
+julia> whole = [1 2; 3 4];
 
-julia> slices = Slices(it, False(), True())
+julia> sliced = Slices(whole, False(), True())
 2-element Slices{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},Tuple{False,True}}:
  [1, 2]
  [3, 4]
 
-julia> slices[1] == it[1, :]
+julia> sliced[1] == whole[1, :]
 true
 
-julia> slices[1] = [2, 1];
+julia> sliced[1] = [2, 1];
 
-julia> it
+julia> whole
 2×2 Array{Int64,2}:
  2  1
  3  4
+
+julia> larger = rand(5, 5, 5);
+
+julia> larger_sliced = Slices(larger, True(), False(), False());
+
+julia> size(first(larger_sliced))
+(5,)
 ```
 """
-function Slices(it, along...)
+Slices(whole, along...) =
     Slices{
-        typeof(view(it, map(
-            (switch, axis) ->
-                if Bool(switch)
-                    axis
-                else
-                    1
-                end,
-            along, axes(it)
-        )...)),
-        length(getindex(along, .!(along))),
-        typeof(it),
-        typeof(along)
-    }(it, along)
-end
+        typeof(@inbounds view(
+            whole,
+            map_unrolled(axis_or_1, along, axes(whole))...
+        )),
+        length(getindex_unrolled(along, map_unrolled(not, along)))
+    }(whole, along)
 export Slices
 
-struct Align{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions}
-    parent::Parent
+struct Align{Item, Dimensions, Sliced, Along} <: AbstractArray{Item, Dimensions}
+    sliced::Sliced
     along::Along
 end
-axes(it::Align) = ntuple(x -> OneTo(1), length(it.along)) |>
-    x -> setindex(x, axes(first(it.parent)), it.along) |>
-    x -> setindex(x, axes(it.parent), .!(it.along))
-size(it::Align) = length.(axes(it))
-@propagate_inbounds getindex(it::Align, index::Int...) =
-    it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...]
-@propagate_inbounds setindex!(it::Align, value, index::Int...) =
-    it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...] = value
+Align{Item, Dimensions}(sliced::Sliced, along::Along) where {Item, Dimensions, Sliced, Along} =
+    Align{Item, Dimensions, Sliced, Along}(sliced, along)
+
+axes(aligned::Align) = setindex_unrolled(
+    setindex_unrolled(
+        aligned.along,
+        axes(aligned.sliced),
+        map_unrolled(not, aligned.along)
+    ),
+    axes(first(aligned.sliced)),
+    aligned.along
+)
+size(aligned::Align) = map_unrolled(length, axes(aligned))
+
+split_indices(aligned, indices) =
+    getindex_unrolled(indices, map_unrolled(not, aligned.along)),
+    getindex_unrolled(indices, aligned.along)
+@propagate_inbounds function getindex(aligned::Align, indices::Int...)
+    outer, inner = split_indices(aligned, indices)
+    aligned.sliced[outer...][inner...]
+end
+@propagate_inbounds function setindex!(aligned::Align, value, indices::Int...)
+    outer, inner = split_indices(aligned, indices)
+    aligned.sliced[outer...][inner...] = value
+end
+
 """
-    Align(it, along...)
+    Align(sliced, along...)
 
 `Align` an array of arrays, all with the same size.
 
@@ -123,26 +167,26 @@ size(it::Align) = length.(axes(it))
 ```jldoctest
 julia> using JuliennedArrays
 
-julia> array = [[1, 2], [3, 4]];
+julia> sliced = [[1, 2], [3, 4]];
 
-julia> aligned = Align(array, False(), True())
+julia> aligned = Align(sliced, False(), True())
 2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:
  1  2
  3  4
 
-julia> aligned[1, :] == array[1]
+julia> aligned[1, :] == sliced[1]
 true
 
 julia> aligned[1, 1] = 0;
 
-julia> array
+julia> sliced
 2-element Array{Array{Int64,1},1}:
  [0, 2]
  [3, 4]
 ```
 """
-Align(it::AbstractArray{<:AbstractArray{Item, Inner}, Outer}, along...) where {Item, Inner, Outer} =
-    Align{Item, Inner + Outer, typeof(it), typeof(along)}(it, along)
+Align(sliced::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}, along...) where {Item, InnerDimensions, OuterDimensions} =
+    Align{Item, OuterDimensions + InnerDimensions}(sliced, along)
 export Align
 
 end
