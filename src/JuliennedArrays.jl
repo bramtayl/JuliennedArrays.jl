@@ -34,7 +34,7 @@ function getindex(into::More{Number, Any}, switch::More{Number, TypedBool}) wher
         next
     end
 end
-setindex(old::Tuple{}, ::Tuple, ::Tuple{}) = ()
+setindex(old::Tuple{}, something, ::Tuple{}) = ()
 function setindex(old::More{Number, Any}, new::Tuple, switch::More{Number, TypedBool}) where {Number}
     first_tuple, tail_tuple =
         if Bool(first(switch))
@@ -51,9 +51,9 @@ struct Slices{Item, Dimensions, Parent, Along} <: AbstractArray{Item, Dimensions
 end
 axes(it::Slices) = getindex(axes(it.parent), .!(it.along))
 size(it::Slices) = length.(axes(it))
-@propagate_inbounds getindex(it::Slices, index...) =
+@propagate_inbounds getindex(it::Slices, index::Int...) =
     view(it.parent, setindex(axes(it.parent), index, .!(it.along))...)
-@propagate_inbounds setindex!(it::Slices, value, index...) =
+@propagate_inbounds setindex!(it::Slices, value, index::Int...) =
     it.parent[setindex(axes(it.parent), index, .!(it.along))...] = value
 """
     Slices(array, along...)
@@ -85,18 +85,15 @@ julia> it
 """
 function Slices(it, along...)
     Slices{
-        promote_op(
-            (it, along) -> view(it, map(
-                (switch, axis) ->
-                    if Bool(switch)
-                        axis
-                    else
-                        1
-                    end,
-                along, axes(it)
-            )...),
-            typeof(it), typeof(along)
-        ),
+        typeof(view(it, map(
+            (switch, axis) ->
+                if Bool(switch)
+                    axis
+                else
+                    1
+                end,
+            along, axes(it)
+        )...)),
         length(getindex(along, .!(along))),
         typeof(it),
         typeof(along)
@@ -112,9 +109,9 @@ axes(it::Align) = ntuple(x -> OneTo(1), length(it.along)) |>
     x -> setindex(x, axes(first(it.parent)), it.along) |>
     x -> setindex(x, axes(it.parent), .!(it.along))
 size(it::Align) = length.(axes(it))
-@propagate_inbounds getindex(it::Align, index...) =
+@propagate_inbounds getindex(it::Align, index::Int...) =
     it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...]
-@propagate_inbounds setindex!(it::Align, value, index...) =
+@propagate_inbounds setindex!(it::Align, value, index::Int...) =
     it.parent[getindex(index, .!(it.along))...][getindex(index, it.along)...] = value
 """
     Align(it, along...)
