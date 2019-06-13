@@ -23,12 +23,6 @@ in_unrolled(straws) = ()
 
 @pure as_vals(them::Int...) = map(Val, them)
 
-@inline convert_dims(::AbstractArray{Item, NumberOfDimensions}, alongs...) where {Item, NumberOfDimensions} =
-    in_unrolled(
-        as_vals(alongs...),
-        ntuple(Val, NumberOfDimensions)...
-    )
-
 abstract type TypedBool end
 """
     struct True
