@@ -1,6 +1,6 @@
 module JuliennedArrays
 
-import Base: axes, getindex, setindex!, size
+import Base: axes, getindex, setindex!, size, parent
 using Base: promote_op, @pure, @propagate_inbounds, tail
 
 map_unrolled(call, variables::Tuple{}) = ()
@@ -76,6 +76,7 @@ Slices{Item, Dimensions}(whole::Whole, alongs::Alongs) where {Item, Dimensions, 
 axes(slices::Slices) =
     getindex_unrolled(axes(slices.whole), map_unrolled(not, slices.alongs))
 size(slices::Slices) = map_unrolled(length, axes(slices))
+parent(slices::Slices) = slices.whole
 
 slice_index(slices, indices) = setindex_unrolled(
     axes(slices.whole),
