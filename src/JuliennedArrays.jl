@@ -191,7 +191,7 @@ split_indices(aligned, indices) =
     getindex_unrolled(indices, map_unrolled(not, aligned.alongs)),
     getindex_unrolled(indices, aligned.alongs)
 @propagate_inbounds function getindex(aligned::Align, indices::Int...)
-    outer, inner = split_indices(aligned, indices)
+    outer, inner = split_indices(aligned, indices[1:min(end,ndims(aligned))])
     aligned.slices[outer...][inner...]
 end
 @propagate_inbounds function setindex!(aligned::Align, value, indices::Int...)
