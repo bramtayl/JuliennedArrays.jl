@@ -234,6 +234,7 @@ export Align
     Along(slices, alongs::Int...)
 
 Alternative syntax: `alongs` is which dimensions will be taken up by the inner arrays.
+If none are given, the default is `1, 2, ..., ndims(first(slices))`.
 
 ```jldoctest
 julia> using JuliennedArrays
@@ -271,3 +272,6 @@ Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensi
     )...)
 
 end
+
+Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}) where {Item, InnerDimensions, OuterDimensions} =
+    Align(slices, ntuple(_ -> True(), InnerDimensions)..., ntuple(_ -> False(), OuterDimensions)...)
