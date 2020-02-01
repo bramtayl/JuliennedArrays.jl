@@ -1,3 +1,6 @@
+using Pkg: instantiate
+instantiate()
+
 @static if VERSION == v"1.3"
     instantiate()
 
