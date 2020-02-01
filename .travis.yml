@@ -7,7 +7,7 @@ julia:
 notifications:
   email: false
 after_success:
-  - julia --project=coverage coverage/submit.jl
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder(pwd()))'
 jobs:
   include:
     - stage: "Documentation"
