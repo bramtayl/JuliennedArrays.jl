@@ -1,8 +1,8 @@
-using Pkg: instantiate
+using Pkg: develop, instantiate, PackageSpec
+develop(PackageSpec(path=pwd()))
 instantiate()
 
 @static if VERSION == v"1.3"
-    instantiate()
 
     using JuliennedArrays
     using Documenter: deploydocs, makedocs
