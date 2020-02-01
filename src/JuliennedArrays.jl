@@ -1,25 +1,16 @@
 module JuliennedArrays
 
 import Base: axes, getindex, setindex!, size
-using Base: promote_op, @pure, @propagate_inbounds, tail
+using Base: @pure, tail
 
-map_unrolled(call, variables::Tuple{}) = ()
-map_unrolled(call, variables) =
-    call(first(variables)), map_unrolled(call, tail(variables))...
+@inline is_in(needle::Needle, straw1::Needle, straws...) where {Needle} = True()
+@inline is_in(needle, straw1, straws...) = is_in(needle, straws...)
+@inline is_in(needle) = False()
 
-map_unrolled(call, variables1::Tuple{}, variables2::Tuple{}) = ()
-map_unrolled(call, variables1, variables2) =
-    call(first(variables1), first(variables2)),
-    map_unrolled(call, tail(variables1), tail(variables2))...
-
-is_in(needle::Needle, straw1::Needle, straws...) where {Needle} = True()
-is_in(needle, straw1, straws...) = is_in(needle, straws...)
-is_in(needle) = False()
-
-in_unrolled(straws, needle1, needles...) =
+@inline in_unrolled(straws, needle1, needles...) =
     is_in(needle1, straws...),
     in_unrolled(straws, needles...)...
-in_unrolled(straws) = ()
+@inline in_unrolled(straws) = ()
 
 @pure as_vals(them::Int...) = map(Val, them)
 
@@ -40,14 +31,14 @@ struct False <: TypedBool end
 @inline untyped(::True) = true
 @inline untyped(::False) = false
 
-not(::False) = True()
-not(::True) = False()
+@inline not(::False) = True()
+@inline not(::True) = False()
 
 export True
 export False
 
-getindex_unrolled(into::Tuple{}, switches::Tuple{}) = ()
-function getindex_unrolled(into, switches)
+@inline getindex_unrolled(into::Tuple{}, switches::Tuple{}) = ()
+@inline function getindex_unrolled(into, switches)
     next = getindex_unrolled(tail(into), tail(switches))
     if untyped(first(switches))
         (first(into), next...)
@@ -56,8 +47,8 @@ function getindex_unrolled(into, switches)
     end
 end
 
-setindex_unrolled(old::Tuple{}, something, ::Tuple{}) = ()
-setindex_unrolled(old, new, switches) =
+@inline setindex_unrolled(old::Tuple{}, something, ::Tuple{}) = ()
+@inline setindex_unrolled(old, new, switches) =
     if untyped(first(switches))
         first(new),
         setindex_unrolled(tail(old), tail(new), tail(switches))...
@@ -70,24 +61,24 @@ struct Slices{Item, Dimensions, Whole, Alongs} <: AbstractArray{Item, Dimensions
     whole::Whole
     alongs::Alongs
 end
-Slices{Item, Dimensions}(whole::Whole, alongs::Alongs) where {Item, Dimensions, Whole, Alongs} =
+@inline Slices{Item, Dimensions}(whole::Whole, alongs::Alongs) where {Item, Dimensions, Whole, Alongs} =
     Slices{Item, Dimensions, Whole, Alongs}(whole, alongs)
 
-axes(slices::Slices) =
-    getindex_unrolled(axes(slices.whole), map_unrolled(not, slices.alongs))
-size(slices::Slices) = map_unrolled(length, axes(slices))
+@inline axes(slices::Slices) =
+    getindex_unrolled(axes(slices.whole), map(not, slices.alongs))
+@inline size(slices::Slices) = map(length, axes(slices))
 
-slice_index(slices, indices) = setindex_unrolled(
+@inline slice_index(slices, indices) = setindex_unrolled(
     axes(slices.whole),
     indices,
-    map_unrolled(not, slices.alongs)
+    map(not, slices.alongs)
 )
-@propagate_inbounds getindex(slices::Slices, indices::Int...) =
+@inline getindex(slices::Slices, indices::Int...) =
     view(slices.whole, slice_index(slices, indices)...)
-@propagate_inbounds setindex!(slices::Slices, value, indices::Int...) =
+@inline setindex!(slices::Slices, value, indices::Int...) =
     slices.whole[slice_index(slices, indices)...] = value
 
-axis_or_1(switch, axis) =
+@inline axis_or_1(switch, axis) =
     if untyped(switch)
         axis
     else
@@ -132,9 +123,9 @@ Slices(whole::AbstractArray, alongs::TypedBool...) =
     Slices{
         typeof(@inbounds view(
             whole,
-            map_unrolled(axis_or_1, alongs, axes(whole))...
+            map(axis_or_1, alongs, axes(whole))...
         )),
-        length(getindex_unrolled(alongs, map_unrolled(not, alongs)))
+        length(getindex_unrolled(alongs, map(not, alongs)))
     }(whole, alongs)
 
 """
@@ -172,28 +163,28 @@ struct Align{Item, Dimensions, Sliced, Alongs} <: AbstractArray{Item, Dimensions
     slices::Sliced
     alongs::Alongs
 end
-Align{Item, Dimensions}(slices::Sliced, alongs::Alongs) where {Item, Dimensions, Sliced, Alongs} =
+@inline Align{Item, Dimensions}(slices::Sliced, alongs::Alongs) where {Item, Dimensions, Sliced, Alongs} =
     Align{Item, Dimensions, Sliced, Alongs}(slices, alongs)
 
-axes(aligned::Align) = setindex_unrolled(
+@inline axes(aligned::Align) = setindex_unrolled(
     setindex_unrolled(
         aligned.alongs,
         axes(aligned.slices),
-        map_unrolled(not, aligned.alongs)
+        map(not, aligned.alongs)
     ),
     axes(first(aligned.slices)),
     aligned.alongs
 )
-size(aligned::Align) = map_unrolled(length, axes(aligned))
+@inline size(aligned::Align) = map(length, axes(aligned))
 
-split_indices(aligned, indices) =
-    getindex_unrolled(indices, map_unrolled(not, aligned.alongs)),
+@inline split_indices(aligned, indices) =
+    getindex_unrolled(indices, map(not, aligned.alongs)),
     getindex_unrolled(indices, aligned.alongs)
-@propagate_inbounds function getindex(aligned::Align, indices::Int...)
+@inline function getindex(aligned::Align, indices::Int...)
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...]
 end
-@propagate_inbounds function setindex!(aligned::Align, value, indices::Int...)
+@inline function setindex!(aligned::Align, value, indices::Int...)
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...] = value
 end
@@ -226,7 +217,7 @@ julia> slices
  [3, 4]
 ```
 """
-Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}, alongs::TypedBool...) where {Item, InnerDimensions, OuterDimensions} =
+@inline Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}, alongs::TypedBool...) where {Item, InnerDimensions, OuterDimensions} =
     Align{Item, OuterDimensions + InnerDimensions}(slices, alongs)
 export Align
 

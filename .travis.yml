@@ -2,11 +2,13 @@ language: julia
 os: linux
 julia:
   - 1.0
-  - 1.1
+  - 1.3
   - nightly
-matrix:
-  allow_failures:
-    - julia: nightly
 notifications:
   email: false
-codecov: true
+after_success:
+  - julia --project=coverage coverage/submit.jl
+  - julia --project=docs docs/deploy.jl
+jobs:
+  allow_failures:
+    - julia: nightly
