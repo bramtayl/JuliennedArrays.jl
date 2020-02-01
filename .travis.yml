@@ -8,7 +8,9 @@ notifications:
   email: false
 after_success:
   - julia --project=coverage coverage/submit.jl
-  - julia --project=docs docs/deploy.jl
 jobs:
-  allow_failures:
-    - julia: nightly
+  include:
+    - stage: "Documentation"
+      julia: 1.3
+      script: julia --project=docs/ docs/deploy.jl
+      after_success: skip
