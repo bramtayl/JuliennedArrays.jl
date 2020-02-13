@@ -6,11 +6,15 @@ julia:
   - nightly
 notifications:
   email: false
+script: dash test/test.sh
 after_success:
-  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder(pwd()))'
+  - julia --project=coverage coverage/submit.jl
 jobs:
   include:
     - stage: "Documentation"
       julia: 1.3
       script: julia --project=docs/ docs/deploy.jl
       after_success: skip
+env:
+  global:
+    - DISABLE_AMEND_COVERAGE_FROM_SRC=yes
