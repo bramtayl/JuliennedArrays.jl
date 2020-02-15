@@ -30,4 +30,4 @@ jobs:
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-uploadcodecov@latest
-      - uses: julia-actions/julia-docdeploy@latest
+      - uses: julia-actions/julia-docdeploy@master
