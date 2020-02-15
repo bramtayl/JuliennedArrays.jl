@@ -6,7 +6,6 @@ julia:
   - nightly
 notifications:
   email: false
-script: dash test/test.sh
 after_success:
   - julia --project=coverage coverage/submit.jl
 jobs:
