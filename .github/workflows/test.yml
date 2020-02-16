@@ -1,9 +1,6 @@
 on:
-  push:
-    branches:
-      - 'master'
-    tags: '*'
-  pull_request:
+  - push
+  - pull_request
 jobs:
   test:
     name: Julia ${{ matrix.version }}
