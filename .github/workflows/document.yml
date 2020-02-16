@@ -1,9 +1,7 @@
-name: document
 on:
   - push
 jobs:
-  test_and_document:
-    name: document
+  document:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
