@@ -5,6 +5,7 @@ on:
     tags: '*'
   pull_request:
 jobs:
+  name: document
   document:
     runs-on: ubuntu-latest
     steps:
