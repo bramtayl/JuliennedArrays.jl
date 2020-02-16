@@ -1,7 +1,3 @@
-using Pkg: develop, instantiate, PackageSpec
-develop(PackageSpec(path=pwd()))
-instantiate()
-
 using JuliennedArrays
 using Documenter: deploydocs, makedocs
 
