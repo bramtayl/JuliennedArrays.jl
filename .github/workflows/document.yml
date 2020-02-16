@@ -15,4 +15,4 @@ jobs:
           version: '1.3'
       - run: julia --project=docs docs/deploy.jl
         env:
-          GITHUB_TOKEN: ${{ secrets.DOCUMENTER_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
