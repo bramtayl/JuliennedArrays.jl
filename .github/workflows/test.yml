@@ -1,9 +1,10 @@
+name: test
 on:
   - push
   - pull_request
 jobs:
   test:
-    name: Julia ${{ matrix.version }}
+    name: ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,4 +21,5 @@ jobs:
       - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-uploadcodecov@latest
         env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           DISABLE_AMEND_COVERAGE_FROM_SRC: yes

@@ -1,9 +1,8 @@
+name: document
 on:
   push:
     branches:
       - 'master'
-    tags: '*'
-  pull_request:
 jobs:
   document:
     runs-on: ubuntu-latest
