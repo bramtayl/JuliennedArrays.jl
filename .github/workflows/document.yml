@@ -13,4 +13,4 @@ jobs:
           version: '1.3'
       - uses: julia-actions/julia-docdeploy@releases/v1
         env:
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+          GITHUB_KEY: ${{ secrets.GITHUB_KEY }}
