@@ -1,4 +1,4 @@
 import JuliennedArrays
-import Documenter: doctest
+using Documenter: doctest
 
 doctest(JuliennedArrays)
