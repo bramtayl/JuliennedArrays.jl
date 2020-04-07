@@ -8,8 +8,7 @@ using Base: @pure, tail
 @inline is_in(needle) = False()
 
 @inline in_unrolled(straws, needle1, needles...) =
-    is_in(needle1, straws...),
-    in_unrolled(straws, needles...)...
+    is_in(needle1, straws...), in_unrolled(straws, needles...)...
 @inline in_unrolled(straws) = ()
 
 @pure as_vals(them::Int...) = map(Val, them)
@@ -50,29 +49,26 @@ end
 @inline setindex_unrolled(old::Tuple{}, something, ::Tuple{}) = ()
 @inline setindex_unrolled(old, new, switches) =
     if untyped(first(switches))
-        first(new),
-        setindex_unrolled(tail(old), tail(new), tail(switches))...
+        first(new), setindex_unrolled(tail(old), tail(new), tail(switches))...
     else
-        first(old),
-        setindex_unrolled(tail(old), new, tail(switches))...
+        first(old), setindex_unrolled(tail(old), new, tail(switches))...
     end
 
-struct Slices{Item, Dimensions, Whole, Alongs} <: AbstractArray{Item, Dimensions}
+struct Slices{Item,Dimensions,Whole,Alongs} <: AbstractArray{Item,Dimensions}
     whole::Whole
     alongs::Alongs
 end
-@inline Slices{Item, Dimensions}(whole::Whole, alongs::Alongs) where {Item, Dimensions, Whole, Alongs} =
-    Slices{Item, Dimensions, Whole, Alongs}(whole, alongs)
+@inline Slices{Item,Dimensions}(
+    whole::Whole,
+    alongs::Alongs,
+) where {Item,Dimensions,Whole,Alongs} = Slices{Item,Dimensions,Whole,Alongs}(whole, alongs)
 
 @inline axes(slices::Slices) =
     getindex_unrolled(axes(slices.whole), map(not, slices.alongs))
 @inline size(slices::Slices) = map(length, axes(slices))
 
-@inline slice_index(slices, indices) = setindex_unrolled(
-    axes(slices.whole),
-    indices,
-    map(not, slices.alongs)
-)
+@inline slice_index(slices, indices) =
+    setindex_unrolled(axes(slices.whole), indices, map(not, slices.alongs))
 @inline getindex(slices::Slices, indices::Int...) =
     view(slices.whole, slice_index(slices, indices)...)
 @inline setindex!(slices::Slices, value, indices::Int...) =
@@ -119,14 +115,13 @@ julia> size(first(larger_slices))
 (5,)
 ```
 """
-Slices(whole::AbstractArray, alongs::TypedBool...) =
-    Slices{
-        typeof(@inbounds view(
-            whole,
-            map(axis_or_1, alongs, axes(whole))...
-        )),
-        length(getindex_unrolled(alongs, map(not, alongs)))
-    }(whole, alongs)
+Slices(whole::AbstractArray, alongs::TypedBool...) = Slices{
+    typeof(@inbounds view(whole, map(axis_or_1, alongs, axes(whole))...)),
+    length(getindex_unrolled(alongs, map(not, alongs))),
+}(
+    whole,
+    alongs,
+)
 
 """
     Slices(whole, alongs::Int...)
@@ -152,28 +147,27 @@ julia> Slices(input, 1, 3)
  [3 7; 4 8]
 ```
 """
-Slices(whole::AbstractArray{Item, NumberOfDimensions}, alongs::Int...) where {Item, NumberOfDimensions} =
-    Slices(whole, in_unrolled(
-        as_vals(alongs...),
-        ntuple(Val, NumberOfDimensions)...
-    )...)
+Slices(
+    whole::AbstractArray{Item,NumberOfDimensions},
+    alongs::Int...,
+) where {Item,NumberOfDimensions} =
+    Slices(whole, in_unrolled(as_vals(alongs...), ntuple(Val, NumberOfDimensions)...)...)
 export Slices
 
-struct Align{Item, Dimensions, Sliced, Alongs} <: AbstractArray{Item, Dimensions}
+struct Align{Item,Dimensions,Sliced,Alongs} <: AbstractArray{Item,Dimensions}
     slices::Sliced
     alongs::Alongs
 end
-@inline Align{Item, Dimensions}(slices::Sliced, alongs::Alongs) where {Item, Dimensions, Sliced, Alongs} =
-    Align{Item, Dimensions, Sliced, Alongs}(slices, alongs)
+@inline Align{Item,Dimensions}(
+    slices::Sliced,
+    alongs::Alongs,
+) where {Item,Dimensions,Sliced,Alongs} =
+    Align{Item,Dimensions,Sliced,Alongs}(slices, alongs)
 
 @inline axes(aligned::Align) = setindex_unrolled(
-    setindex_unrolled(
-        aligned.alongs,
-        axes(aligned.slices),
-        map(not, aligned.alongs)
-    ),
+    setindex_unrolled(aligned.alongs, axes(aligned.slices), map(not, aligned.alongs)),
     axes(first(aligned.slices)),
-    aligned.alongs
+    aligned.alongs,
 )
 @inline size(aligned::Align) = map(length, axes(aligned))
 
@@ -217,8 +211,11 @@ julia> slices
  [3, 4]
 ```
 """
-@inline Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}, alongs::TypedBool...) where {Item, InnerDimensions, OuterDimensions} =
-    Align{Item, OuterDimensions + InnerDimensions}(slices, alongs)
+@inline Align(
+    slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
+    alongs::TypedBool...,
+) where {Item,InnerDimensions,OuterDimensions} =
+    Align{Item,OuterDimensions + InnerDimensions}(slices, alongs)
 export Align
 
 """
@@ -255,10 +252,12 @@ julia> Align(slices, 1, 3)
  6  8
 ```
 """
-Align(slices::AbstractArray{<:AbstractArray{Item, InnerDimensions}, OuterDimensions}, alongs::Int...) where {Item, InnerDimensions, OuterDimensions} =
-    Align(slices, in_unrolled(
-        as_vals(alongs...),
-        ntuple(Val, InnerDimensions + OuterDimensions)...
-    )...)
+Align(
+    slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
+    alongs::Int...,
+) where {Item,InnerDimensions,OuterDimensions} = Align(
+    slices,
+    in_unrolled(as_vals(alongs...), ntuple(Val, InnerDimensions + OuterDimensions)...)...,
+)
 
 end

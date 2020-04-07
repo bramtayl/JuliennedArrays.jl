@@ -1,4 +1,4 @@
-name: document
+name: permanent
 on:
   push:
     branches:
@@ -14,3 +14,6 @@ jobs:
       - uses: julia-actions/julia-docdeploy@releases/v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: JuliaRegistries/TagBot@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
