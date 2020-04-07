@@ -257,7 +257,10 @@ Align(
     alongs::Int...,
 ) where {Item,InnerDimensions,OuterDimensions} = Align(
     slices,
-    in_unrolled(as_vals(alongs...), ntuple(Val, InnerDimensions + OuterDimensions)...)...,
+    in_unrolled(
+        as_vals(alongs...),
+        ntuple(Val, InnerDimensions + OuterDimensions)...,
+    )...,
 )
 
 end
