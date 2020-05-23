@@ -141,10 +141,15 @@ julia> input = reshape(1:8, 2, 2, 2)
  5  7
  6  8
 
-julia> Slices(input, 1, 3)
+julia> s = Slices(input, 1, 3)
 2-element Slices{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{True,False,True}}:
  [1 5; 2 6]
  [3 7; 4 8]
+
+julia> map(sum, s)
+2-element Array{Int64,1}:
+ 14
+ 22
 ```
 """
 Slices(
