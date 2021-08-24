@@ -96,7 +96,7 @@ julia> using JuliennedArrays
 julia> whole = [1 2; 3 4];
 
 julia> slices = Slices(whole, False(), True())
-2-element Slices{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},Tuple{False,True}}:
+2-element Slices{SubArray{$Int, 1}, 1}:
  [1, 2]
  [3, 4]
 
@@ -106,7 +106,7 @@ true
 julia> slices[1] = [2, 1];
 
 julia> whole
-2×2 Array{Int64,2}:
+2×2 Matrix{$Int}:
  2  1
  3  4
 
@@ -136,7 +136,7 @@ Alternative syntax: `alongs` is which dimensions will be replaced with `:` when 
 julia> using JuliennedArrays
 
 julia> input = reshape(1:8, 2, 2, 2)
-2×2×2 reshape(::UnitRange{Int64}, 2, 2, 2) with eltype Int64:
+2×2×2 reshape(::UnitRange{$Int}, 2, 2, 2) with eltype $Int:
 [:, :, 1] =
  1  3
  2  4
@@ -146,12 +146,12 @@ julia> input = reshape(1:8, 2, 2, 2)
  6  8
 
 julia> s = Slices(input, 1, 3)
-2-element Slices{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{True,False,True}}:
+2-element Slices{SubArray{$Int, 2}, 1}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> map(sum, s)
-2-element Array{Int64,1}:
+2-element Vector{$Int}:
  14
  22
 ```
@@ -160,6 +160,15 @@ function Slices(whole::AbstractArray{T,N}, alongs::Int...) where {T,N}
     any(x->x>N, alongs) && throw(ArgumentError("All alongs values $(alongs) should be less than $(N)"))
     Slices(whole, in_unrolled(as_vals(alongs...), ntuple(Val, N)...)...)
 end
+
+function Base.showarg(io::IO, ::Slices{T,N}, toplevel) where {T,N}
+    print(io, "Slices{", basetype(T), "{", eltype(T), ", ", ndims(T), "}, ", N, "}")
+end
+
+# This is expected to be added to Julia (maybe under a different name)
+# Follow https://github.com/JuliaLang/julia/issues/35543 for progress
+basetype(T::Type) = Base.typename(T).wrapper
+basetype(T) = basetype(typeof(T))
 
 ###
 # Align
@@ -214,7 +223,7 @@ julia> using JuliennedArrays
 julia> slices = [[1, 2], [3, 4]];
 
 julia> aligned = Align(slices, False(), True())
-2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:
+2×2 Align{$Int, 2} with eltype $Int:
  1  2
  3  4
 
@@ -224,7 +233,7 @@ true
 julia> aligned[1, 1] = 0;
 
 julia> slices
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{$Int}}:
  [0, 2]
  [3, 4]
 ```
@@ -244,7 +253,7 @@ Alternative syntax: `alongs` is which dimensions will be taken up by the inner a
 julia> using JuliennedArrays
 
 julia> input = reshape(1:8, 2, 2, 2)
-2×2×2 reshape(::UnitRange{Int64}, 2, 2, 2) with eltype Int64:
+2×2×2 reshape(::UnitRange{$Int}, 2, 2, 2) with eltype $Int:
 [:, :, 1] =
  1  3
  2  4
@@ -253,13 +262,13 @@ julia> input = reshape(1:8, 2, 2, 2)
  5  7
  6  8
 
-julia> slices = collect(Slices(input, 1, 3))
-2-element Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1}:
+julia> slices = Slices(input, 1, 3)
+2-element Slices{SubArray{$Int, 2}, 1}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> Align(slices, 1, 3)
-2×2×2 Align{Int64,3,Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1},Tuple{True,False,True}}:
+2×2×2 Align{$Int, 3} with eltype $Int:
 [:, :, 1] =
  1  3
  2  4
@@ -280,4 +289,9 @@ Align(
     )...,
 )
 
+function Base.showarg(io::IO, ::Align{T,N}, toplevel) where {T,N}
+    print(io, "Align{", T, ", ", N, "}")
+    toplevel && print(io, " with eltype ", T)
 end
+
+end # module
