@@ -7,6 +7,8 @@ using Test
         X = @inferred Align(Xs, True(), False(), True())
         @test size(X) == (2, 4, 3)
         @test permutedims(cat(Xs...; dims=3), (1, 3, 2)) == X
+        @test X[1] == Xs[1][1] # test linear indexing
+        @test X[1, 2, 3] == Xs[2][1, 3] # test cartesian indexing
 
         Xs = reshape(Xs, 1, 4)
         X = @inferred Align(Xs, True(), False(), True(), False())
@@ -41,6 +43,8 @@ using Test
         @test size(Xs) == (3, 5)
         @test Xs[1, 2] == X[:, 1, :, 2]
         @test Align(Xs, 1, 3) == X # Slices is the inverse of Align
+        @test Xs[1] == X[:, 1, :, 1] # test linear indexing
+        @test Xs[1, 3] == X[:, 1, :, 3] # test cartesian indexing
 
         # type is not inferrable for integer alongs
         RT = Base.return_types(Slices, (typeof(X), Int, Int))[1]

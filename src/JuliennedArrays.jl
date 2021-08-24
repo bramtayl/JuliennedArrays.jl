@@ -76,9 +76,9 @@ end
 
 @inline slice_index(slices, indices) =
     setindex_unrolled(axes(slices.whole), indices, map(not, slices.alongs))
-@inline getindex(slices::Slices, indices::Int...) =
+@inline getindex(slices::Slices{T,N}, indices::Vararg{Int,N}) where {T,N} =
     view(slices.whole, slice_index(slices, indices)...)
-@inline setindex!(slices::Slices, value, indices::Int...) =
+@inline setindex!(slices::Slices{T,N}, value, indices::Vararg{Int,N}) where {T,N} =
     slices.whole[slice_index(slices, indices)...] = value
 
 @inline axis_or_1(switch, axis) = untyped(switch) ? axis : 1
@@ -201,11 +201,11 @@ end
 @inline split_indices(aligned, indices) =
     getindex_unrolled(indices, map(not, aligned.alongs)),
     getindex_unrolled(indices, aligned.alongs)
-@inline function getindex(aligned::Align, indices::Int...)
+@inline function getindex(aligned::Align{T,N}, indices::Vararg{Int,N}) where {T,N}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...]
 end
-@inline function setindex!(aligned::Align, value, indices::Int...)
+@inline function setindex!(aligned::Align{T,N}, value, indices::Vararg{Int,N}) where {T,N}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...] = value
 end
