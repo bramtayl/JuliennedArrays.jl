@@ -268,4 +268,77 @@ Align(
     )...,
 )
 
+
+"""
+    stack(slices, [dims::Int])
+
+Stack slices along `dims` with a new dimension.
+
+When `dims > ndims(first(slices))`, this is equivalent to `cat(slices...; dims=dims)` except that
+this is a lazy operation.
+
+# Examples
+
+```jldoctest; setup=:(using JuliennedArrays: stack)
+julia> x = [rand(2, 3) for _ in 1:4];
+
+julia> size(stack(x, 1))
+(4, 2, 3)
+
+julia> size(stack(x, 2))
+(2, 4, 3)
+
+julia> size(stack(x, 3))
+(2, 3, 4)
+
+julia> stack(x) == stack(x, 3) == cat(x..., dims=3)
+true
+```
+
+The `dims` argument currently only supports one scalar integer, if you want to stack along multiple
+dimensions, please use [`Align`](@ref).
+"""
+function stack(slices::AbstractVector{<:AbstractArray}, dims::Int=ndims(first(slices))+1)
+    alongs = ntuple(ndims(first(slices))) do i
+        i < dims ? i : i + 1
+    end
+    Align(slices, alongs...)
+end
+
+"""
+    unstack(whole, [dims::Int])
+
+Slicing an array along dimension `dims` and make a vector from it.
+
+This is equivalent to `eachslice(whole, dims=dims)` except that this creates an vector interface
+instead of a generic iterator.
+
+# Examples
+
+```jldoctest; setup=:(using JuliennedArrays: unstack)
+julia> x = rand(2, 3, 4);
+
+julia> size(unstack(x, 1))
+(2,)
+
+julia> size(unstack(x, 2))
+(3,)
+
+julia> size(unstack(x, 3))
+(4,)
+
+julia> unstack(x, 3) == collect(eachslice(x, dims=3))
+true
+```
+
+The `dims` argument currently only supports one scalar integer, if you want to make slices along
+multiple dimensions, please use [`Slices`](@ref).
+"""
+function unstack(whole, dims::Int=ndims(whole))
+    alongs = ntuple(ndims(whole)) do i
+        i < dims ? i : i + 1
+    end
+    Slices(whole, alongs...)
+end
+
 end
