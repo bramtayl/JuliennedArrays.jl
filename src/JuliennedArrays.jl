@@ -93,7 +93,7 @@ julia> using JuliennedArrays
 julia> whole = [1 2; 3 4];
 
 julia> slices = Slices(whole, False(), True())
-2-element Slices{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},Tuple{False,True}}:
+2-element Slices{SubArray{Int64, 1, Matrix{Int64}, Tuple{Int64, Base.OneTo{Int64}}, true}, 1, Matrix{Int64}, Tuple{False, True}}:
  [1, 2]
  [3, 4]
 
@@ -103,7 +103,7 @@ true
 julia> slices[1] = [2, 1];
 
 julia> whole
-2×2 Array{Int64,2}:
+2×2 Matrix{Int64}:
  2  1
  3  4
 
@@ -142,12 +142,12 @@ julia> input = reshape(1:8, 2, 2, 2)
  6  8
 
 julia> s = Slices(input, 1, 3)
-2-element Slices{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{True,False,True}}:
+2-element Slices{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}, 1, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{True, False, True}}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> map(sum, s)
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
  14
  22
 ```
@@ -201,7 +201,7 @@ julia> using JuliennedArrays
 julia> slices = [[1, 2], [3, 4]];
 
 julia> aligned = Align(slices, False(), True())
-2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:
+2×2 Align{Int64, 2, Vector{Vector{Int64}}, Tuple{False, True}}:
  1  2
  3  4
 
@@ -211,7 +211,7 @@ true
 julia> aligned[1, 1] = 0;
 
 julia> slices
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{Int64}}:
  [0, 2]
  [3, 4]
 ```
@@ -242,12 +242,12 @@ julia> input = reshape(1:8, 2, 2, 2)
  6  8
 
 julia> slices = collect(Slices(input, 1, 3))
-2-element Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1}:
+2-element Vector{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> Align(slices, 1, 3)
-2×2×2 Align{Int64,3,Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1},Tuple{True,False,True}}:
+2×2×2 Align{Int64, 3, Vector{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}}, Tuple{True, False, True}}:
 [:, :, 1] =
  1  3
  2  4
