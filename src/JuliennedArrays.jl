@@ -93,7 +93,7 @@ julia> using JuliennedArrays
 julia> whole = [1 2; 3 4];
 
 julia> slices = Slices(whole, False(), True())
-2-element Slices{SubArray{Int64,1,Array{Int64,2},Tuple{Int64,Base.OneTo{Int64}},true},1,Array{Int64,2},Tuple{False,True}}:
+2-element Slices{SubArray{Int64, 1, Matrix{Int64}, Tuple{Int64, Base.OneTo{Int64}}, true}, 1, Matrix{Int64}, Tuple{False, True}}:
  [1, 2]
  [3, 4]
 
@@ -103,7 +103,7 @@ true
 julia> slices[1] = [2, 1];
 
 julia> whole
-2×2 Array{Int64,2}:
+2×2 Matrix{Int64}:
  2  1
  3  4
 
@@ -142,12 +142,12 @@ julia> input = reshape(1:8, 2, 2, 2)
  6  8
 
 julia> s = Slices(input, 1, 3)
-2-element Slices{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{True,False,True}}:
+2-element Slices{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}, 1, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{True, False, True}}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> map(sum, s)
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
  14
  22
 ```
@@ -201,7 +201,7 @@ julia> using JuliennedArrays
 julia> slices = [[1, 2], [3, 4]];
 
 julia> aligned = Align(slices, False(), True())
-2×2 Align{Int64,2,Array{Array{Int64,1},1},Tuple{False,True}}:
+2×2 Align{Int64, 2, Vector{Vector{Int64}}, Tuple{False, True}}:
  1  2
  3  4
 
@@ -211,7 +211,7 @@ true
 julia> aligned[1, 1] = 0;
 
 julia> slices
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{Int64}}:
  [0, 2]
  [3, 4]
 ```
@@ -242,12 +242,12 @@ julia> input = reshape(1:8, 2, 2, 2)
  6  8
 
 julia> slices = collect(Slices(input, 1, 3))
-2-element Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1}:
+2-element Vector{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}}:
  [1 5; 2 6]
  [3 7; 4 8]
 
 julia> Align(slices, 1, 3)
-2×2×2 Align{Int64,3,Array{SubArray{Int64,2,Base.ReshapedArray{Int64,3,UnitRange{Int64},Tuple{}},Tuple{Base.OneTo{Int64},Int64,Base.OneTo{Int64}},false},1},Tuple{True,False,True}}:
+2×2×2 Align{Int64, 3, Vector{SubArray{Int64, 2, Base.ReshapedArray{Int64, 3, UnitRange{Int64}, Tuple{}}, Tuple{Base.OneTo{Int64}, Int64, Base.OneTo{Int64}}, false}}, Tuple{True, False, True}}:
 [:, :, 1] =
  1  3
  2  4
@@ -267,5 +267,78 @@ Align(
         ntuple(Val, InnerDimensions + OuterDimensions)...,
     )...,
 )
+
+
+"""
+    stack(slices, [dims::Int])
+
+Stack slices along `dims` with a new dimension.
+
+When `dims > ndims(first(slices))`, this is equivalent to `cat(slices...; dims=dims)` except that
+this is a lazy operation.
+
+# Examples
+
+```jldoctest; setup=:(using JuliennedArrays: stack)
+julia> x = [rand(2, 3) for _ in 1:4];
+
+julia> size(stack(x, 1))
+(4, 2, 3)
+
+julia> size(stack(x, 2))
+(2, 4, 3)
+
+julia> size(stack(x, 3))
+(2, 3, 4)
+
+julia> stack(x) == stack(x, 3) == cat(x..., dims=3)
+true
+```
+
+The `dims` argument currently only supports one scalar integer, if you want to stack along multiple
+dimensions, please use [`Align`](@ref).
+"""
+function stack(slices::AbstractVector{<:AbstractArray}, dims::Int=ndims(first(slices))+1)
+    alongs = ntuple(ndims(first(slices))) do i
+        i < dims ? i : i + 1
+    end
+    Align(slices, alongs...)
+end
+
+"""
+    unstack(whole, [dims::Int])
+
+Slicing an array along dimension `dims` and make a vector from it.
+
+This is equivalent to `eachslice(whole, dims=dims)` except that this creates an vector interface
+instead of a generic iterator.
+
+# Examples
+
+```jldoctest; setup=:(using JuliennedArrays: unstack)
+julia> x = rand(2, 3, 4);
+
+julia> size(unstack(x, 1))
+(2,)
+
+julia> size(unstack(x, 2))
+(3,)
+
+julia> size(unstack(x, 3))
+(4,)
+
+julia> unstack(x, 3) == collect(eachslice(x, dims=3))
+true
+```
+
+The `dims` argument currently only supports one scalar integer, if you want to make slices along
+multiple dimensions, please use [`Slices`](@ref).
+"""
+function unstack(whole, dims::Int=ndims(whole))
+    alongs = ntuple(ndims(whole)) do i
+        i < dims ? i : i + 1
+    end
+    Slices(whole, alongs...)
+end
 
 end
