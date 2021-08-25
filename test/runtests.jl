@@ -21,7 +21,6 @@ using Test
         @test !isconcretetype(RT)
         @test Align(Xs, True(), False(), True()) == Align(Xs, 1, 3)
 
-        @test_throws ArgumentError Align([rand(2, 3), rand(3, 4)], 2, 3)
         @test_throws DimensionMismatch Align([rand(2, 3) for _ in 1:4], 1) # issue #25
         @test_throws MethodError Align(ones(2, 3, 4), 1, 2, 3)
     end

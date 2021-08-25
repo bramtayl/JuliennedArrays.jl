@@ -175,8 +175,9 @@ struct Align{Item,Dimensions,Sliced,Alongs} <: AbstractArray{Item,Dimensions}
     slices::Sliced
     alongs::Alongs
     function Align{T,N,S,A}(slices::S, alongs::A) where {T,N,S,A}
-        sz = size(first(slices))
-        all(x->sz==size(x), slices) || throw(ArgumentError("All sizes of slices should be the same."))
+        # TODO: run eager size check without introducing much overheads
+        # sz = @inbounds size(first(slices))
+        # all(x->sz==size(x), slices) || throw(ArgumentError("All sizes of slices should be the same."))
         length(alongs) == N || throw(DimensionMismatch("The total dimension $(N) is expected to be the sum of inner dimension $(length(sz)) and outer dimension $(length(alongs))"))
         inner_dimensions = mapreduce(isequal(True()), +, alongs)
         inner_dimensions == ndims(first(slices)) || throw(DimensionMismatch("Only $inner_dimensions inner dimensions are used, expected $(ndims(first(slices))) dimensions."))
