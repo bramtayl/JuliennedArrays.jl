@@ -119,9 +119,7 @@ julia> size(first(larger_slices))
 ```
 """
 function Slices(whole::AbstractArray, alongs::TypedBool...)
-    length(alongs) <= ndims(whole) || throw(ArgumentError("$(length(alongs)) dimensions are specified, expected to be <= $(ndims(whole))"))
-    # mark all tailing dimensions as outer dimensions
-    alongs = (alongs..., ntuple(i->False(), ndims(whole)-length(alongs))...)
+    length(alongs) == ndims(whole) || throw(ArgumentError("$(length(alongs)) dimensions are specified, expected to be == $(ndims(whole))"))
     x = @inbounds view(whole, map(axis_or_1, alongs, axes(whole))...)
     N = length(getindex_unrolled(alongs, map(not, alongs)))
     return Slices{typeof(x),N}(whole, alongs)

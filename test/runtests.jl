@@ -29,7 +29,6 @@ using Test
     @testset "Slice" begin
         X = rand(2, 3, 4, 5)
         Xs = @inferred Slices(X, True(), False(), False(), False())
-        @test Xs === @inferred(Slices(X, True()))
 
         Xs = Slices(X, 1)
         @test size(Xs) == (3, 4, 5)
@@ -49,8 +48,10 @@ using Test
         # type is not inferrable for integer alongs
         RT = Base.return_types(Slices, (typeof(X), Int, Int))[1]
         @test !isconcretetype(RT)
-        @test Slices(X, True(), False(), True()) == Slices(X, 1, 3)
+        @test Slices(X, True(), False(), True(), False()) == Slices(X, 1, 3)
 
+        X = rand(2, 3, 4, 5)
+        @test_throws ArgumentError Slices(X, True())
         @test_throws ArgumentError Slices(X, True(), False(), False(), False(), False())
         @test_throws ArgumentError Slices(X, 5)
     end
