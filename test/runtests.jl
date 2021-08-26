@@ -21,8 +21,8 @@ using Test
         @test !isconcretetype(RT)
         @test Align(Xs, True(), False(), True()) == Align(Xs, 1, 3)
 
-        @test_throws DimensionMismatch Align([rand(2, 3) for _ in 1:4], 1) # issue #25
-        @test_throws MethodError Align(ones(2, 3, 4), 1, 2, 3)
+        # @test_throws DimensionMismatch Align([rand(2, 3) for _ in 1:4], 1) # issue #25
+        # @test_throws MethodError Align(ones(2, 3, 4), 1, 2, 3)
     end
 
     @testset "Slice" begin
@@ -49,9 +49,9 @@ using Test
         @test !isconcretetype(RT)
         @test Slices(X, True(), False(), True(), False()) == Slices(X, 1, 3)
 
-        X = rand(2, 3, 4, 5)
-        @test_throws ArgumentError Slices(X, True())
-        @test_throws ArgumentError Slices(X, True(), False(), False(), False(), False())
-        @test_throws ArgumentError Slices(X, 5)
+        # X = rand(2, 3, 4, 5)
+        # @test_throws ArgumentError Slices(X, True())
+        # @test_throws ArgumentError Slices(X, True(), False(), False(), False(), False())
+        # @test_throws ArgumentError Slices(X, 5)
     end
 end

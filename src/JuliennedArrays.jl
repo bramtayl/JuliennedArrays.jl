@@ -61,7 +61,7 @@ struct Slices{Item,Dimensions,Whole,Alongs} <: AbstractArray{Item,Dimensions}
     whole::Whole
     alongs::Alongs
     function Slices{T,N,W,A}(whole::W, alongs::A) where {T,N,W,A}
-        any(isequal(True()), alongs) || throw(DimensionMismatch("Expected to have at least one active slicing dimension."))
+        # any(isequal(True()), alongs) || throw(DimensionMismatch("Expected to have at least one active slicing dimension."))
         new{T,N,W,A}(whole, alongs)
     end
 end
@@ -119,7 +119,7 @@ julia> size(first(larger_slices))
 ```
 """
 function Slices(whole::AbstractArray, alongs::TypedBool...)
-    length(alongs) == ndims(whole) || throw(ArgumentError("$(length(alongs)) dimensions are specified, expected to be == $(ndims(whole))"))
+    # length(alongs) == ndims(whole) || throw(ArgumentError("$(length(alongs)) dimensions are specified, expected to be == $(ndims(whole))"))
     x = @inbounds view(whole, map(axis_or_1, alongs, axes(whole))...)
     N = length(getindex_unrolled(alongs, map(not, alongs)))
     return Slices{typeof(x),N}(whole, alongs)
@@ -178,9 +178,9 @@ struct Align{Item,Dimensions,Sliced,Alongs} <: AbstractArray{Item,Dimensions}
         # TODO: run eager size check without introducing much overheads
         # sz = @inbounds size(first(slices))
         # all(x->sz==size(x), slices) || throw(ArgumentError("All sizes of slices should be the same."))
-        length(alongs) == N || throw(DimensionMismatch("The total dimension $(N) is expected to be the sum of inner dimension $(length(sz)) and outer dimension $(length(alongs))"))
-        inner_dimensions = mapreduce(isequal(True()), +, alongs)
-        inner_dimensions == ndims(first(slices)) || throw(DimensionMismatch("Only $inner_dimensions inner dimensions are used, expected $(ndims(first(slices))) dimensions."))
+        # length(alongs) == N || throw(DimensionMismatch("The total dimension $(N) is expected to be the sum of inner dimension $(length(sz)) and outer dimension $(length(alongs))"))
+        # inner_dimensions = mapreduce(isequal(True()), +, alongs)
+        # inner_dimensions == ndims(first(slices)) || throw(DimensionMismatch("Only $inner_dimensions inner dimensions are used, expected $(ndims(first(slices))) dimensions."))
         new{T,N,S,A}(slices, alongs)
     end
 end
