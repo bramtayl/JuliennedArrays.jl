@@ -1,14 +1,14 @@
 name = "JuliennedArrays"
 uuid = "5cadff95-7770-533d-a838-a1bf817ee6e0"
 authors = ["Brandon Taylor <brandon.taylor221@gmail.com>"]
-version = "0.2.2"
 repo = "https://github.com/bramtayl/JuliennedArrays.jl.git"
-
-[extras]
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-
-[targets]
-test = ["Documenter"]
+version = "0.2.2"
 
 [compat]
 julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
