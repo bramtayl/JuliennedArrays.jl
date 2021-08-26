@@ -155,7 +155,7 @@ julia> map(sum, s)
 ```
 """
 function Slices(whole::AbstractArray{T,N}, alongs::Int...) where {T,N}
-    any(x->x>N, alongs) && throw(ArgumentError("All alongs values $(alongs) should be less than $(N)"))
+    # any(x->x>N, alongs) && throw(ArgumentError("All alongs values $(alongs) should be less than $(N)"))
     Slices(whole, in_unrolled(as_vals(alongs...), ntuple(Val, N)...)...)
 end
 
