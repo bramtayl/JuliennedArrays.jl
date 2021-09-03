@@ -222,7 +222,7 @@ julia> using Test: @inferred
 julia> slices_1_3(x) = Slices(x, 1, 3);
 
 julia> @inferred slices_1_3(input)
-2-element Slices{SubArray{Int64, 2}, 1}:
+2-element Slices{SubArray{$Int, 2}, 1}:
  [1 5; 2 6]
  [3 7; 4 8]
 ```
@@ -452,7 +452,7 @@ julia> using Test: @inferred
 julia> align_1_3(x) = Align(x, 1, 3);
 
 julia> @inferred align_1_3(slices)
-2×2×2 Align{Int64, 3} with eltype Int64:
+2×2×2 Align{$Int, 3} with eltype $Int:
 [:, :, 1] =
  1  3
  2  4
