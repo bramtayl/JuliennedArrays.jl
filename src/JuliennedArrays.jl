@@ -1,18 +1,18 @@
 module JuliennedArrays
 
-import Base: axes, getindex, setindex!, size
-using Base: @pure, tail
+import Base: axes, getindex, Int, setindex!, size
+using Base: @inline, @propagate_inbounds, @pure, tail
 
 export Slices, Align
 export True, False
 
-@inline is_in(needle::Needle, straw1::Needle, straws...) where {Needle} = True()
-@inline is_in(needle, straw1, straws...) = is_in(needle, straws...)
-@inline is_in(needle) = False()
+is_in(::Needle, ::Needle, _...) where {Needle} = True()
+is_in(needle, _, straws...) = is_in(needle, straws...)
+is_in(_) = False()
 
-@inline in_unrolled(straws, needle1, needles...) =
+in_unrolled(straws, needle1, needles...) =
     is_in(needle1, straws...), in_unrolled(straws, needles...)...
-@inline in_unrolled(straws) = ()
+in_unrolled(_) = ()
 
 @pure as_vals(them::Int...) = map(Val, them)
 
@@ -30,14 +30,14 @@ Typed `false`
 """
 struct False <: TypedBool end
 
-@inline untyped(::True) = true
-@inline untyped(::False) = false
+untyped(::True) = true
+untyped(::False) = false
 
-@inline not(::False) = True()
-@inline not(::True) = False()
+not(::False) = True()
+not(::True) = False()
 
-@inline getindex_unrolled(into::Tuple{}, switches::Tuple{}) = ()
-@inline function getindex_unrolled(into, switches)
+getindex_unrolled(::Tuple{}, ::Tuple{}) = ()
+function getindex_unrolled(into, switches)
     next = getindex_unrolled(tail(into), tail(switches))
     if untyped(first(switches))
         (first(into), next...)
@@ -46,8 +46,8 @@ struct False <: TypedBool end
     end
 end
 
-@inline setindex_unrolled(old::Tuple{}, something, ::Tuple{}) = ()
-@inline setindex_unrolled(old, new, switches) =
+setindex_unrolled(::Tuple{}, _, ::Tuple{}) = ()
+setindex_unrolled(old, new, switches) =
     if untyped(first(switches))
         first(new), setindex_unrolled(tail(old), tail(new), tail(switches))...
     else
@@ -60,28 +60,26 @@ end
 struct Slices{Item,Dimensions,Whole,Alongs} <: AbstractArray{Item,Dimensions}
     whole::Whole
     alongs::Alongs
-    function Slices{T,N,W,A}(whole::W, alongs::A) where {T,N,W,A}
-        # any(isequal(True()), alongs) || throw(DimensionMismatch("Expected to have at least one active slicing dimension."))
-        new{T,N,W,A}(whole, alongs)
-    end
 end
-@inline Slices{Item,Dimensions}(
-    whole::Whole,
-    alongs::Alongs,
-) where {Item,Dimensions,Whole,Alongs} = Slices{Item,Dimensions,Whole,Alongs}(whole, alongs)
+Slices{Item,Dimensions}(whole::Whole, alongs::Alongs) where {Item,Dimensions,Whole,Alongs} =
+    Slices{Item,Dimensions,Whole,Alongs}(whole, alongs)
 
-@inline axes(slices::Slices) =
-    getindex_unrolled(axes(slices.whole), map(not, slices.alongs))
-@inline size(slices::Slices) = map(length, axes(slices))
+axes(slices::Slices) = getindex_unrolled(axes(slices.whole), map(not, slices.alongs))
+size(slices::Slices) = map(length, axes(slices))
 
-@inline slice_index(slices, indices) =
+slice_index(slices, indices) =
     setindex_unrolled(axes(slices.whole), indices, map(not, slices.alongs))
-@inline getindex(slices::Slices{T,N}, indices::Vararg{Int,N}) where {T,N} =
-    view(slices.whole, slice_index(slices, indices)...)
-@inline setindex!(slices::Slices{T,N}, value, indices::Vararg{Int,N}) where {T,N} =
-    slices.whole[slice_index(slices, indices)...] = value
+getindex(
+    slices::Slices{Item,Dimensions},
+    indices::Vararg{Int,Dimensions},
+) where {Item,Dimensions} = view(slices.whole, slice_index(slices, indices)...)
+setindex!(
+    slices::Slices{Item,Dimensions},
+    value,
+    indices::Vararg{Int,Dimensions},
+) where {Item,Dimensions} = slices.whole[slice_index(slices, indices)...] = value
 
-@inline axis_or_1(switch, axis) = untyped(switch) ? axis : 1
+axis_or_1(switch, axis) = untyped(switch) ? axis : 1
 
 """
     Slices(whole, alongs::TypedBool...)
@@ -90,7 +88,7 @@ Slice `whole` into `view`s.
 
 `alongs`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be replaced with `:` when slicing.
 
-```jldoctest
+```jldoctest slices_bools
 julia> using JuliennedArrays
 
 julia> whole = [1 2; 3 4];
@@ -117,12 +115,26 @@ julia> larger_slices = Slices(larger, True(), False(), False());
 julia> size(first(larger_slices))
 (5,)
 ```
+
+You must include one along for each dimension of `whole`.
+
+```jldoctest slices_bools
+julia> using Test: @test_throws
+
+julia> @test_throws MethodError Slices(whole, True());
+```
 """
-function Slices(whole::AbstractArray, alongs::TypedBool...)
-    # length(alongs) == ndims(whole) || throw(ArgumentError("$(length(alongs)) dimensions are specified, expected to be == $(ndims(whole))"))
-    x = @inbounds view(whole, map(axis_or_1, alongs, axes(whole))...)
-    N = length(getindex_unrolled(alongs, map(not, alongs)))
-    return Slices{typeof(x),N}(whole, alongs)
+function Slices(
+    whole::AbstractArray{<:Any,Dimensions},
+    alongs::Vararg{TypedBool,Dimensions},
+) where {Dimensions}
+    Slices{
+        typeof(@inbounds view(whole, map(axis_or_1, alongs, axes(whole))...)),
+        length(getindex_unrolled(alongs, map(not, alongs))),
+    }(
+        whole,
+        alongs,
+    )
 end
 
 """
@@ -130,7 +142,7 @@ end
 
 Alternative syntax: `alongs` is which dimensions will be replaced with `:` when slicing.
 
-```jldoctest
+```jldoctest slices_ints
 julia> using JuliennedArrays
 
 julia> input = reshape(1:8, 2, 2, 2)
@@ -153,20 +165,98 @@ julia> map(sum, s)
  14
  22
 ```
+
+No along should be greater than the number of dimensions of `whole`.
+
+```jldoctest slices_ints
+julia> Slices(input, 4)
+ERROR: ArgumentError: All alongs values (4,) should be less than or equal to 3
+[...]
+```
+
+You can infer the result if the dimensions are constant.
+
+```jldoctest slices_ints
+julia> using Test: @inferred
+
+julia> slices_1_3(x) = Slices(x, 1, 3);
+
+julia> @inferred slices_1_3(input) # broken
+```
 """
-function Slices(whole::AbstractArray{T,N}, alongs::Int...) where {T,N}
-    # any(x->x>N, alongs) && throw(ArgumentError("All alongs values $(alongs) should be less than $(N)"))
-    Slices(whole, in_unrolled(as_vals(alongs...), ntuple(Val, N)...)...)
+function Slices(
+    whole::AbstractArray{Item,Dimensions},
+    alongs::Int...,
+) where {Item,Dimensions}
+    value_alongs = as_vals(alongs...)
+    value_dimensions = ntuple(Val, Dimensions)
+    if untyped(is_in(False(), in_unrolled(value_dimensions, value_alongs...)...))
+        throw(
+            ArgumentError(
+                "All alongs values $(alongs) should be less than or equal to $(Dimensions)",
+            ),
+        )
+    end
+    Slices(whole, in_unrolled(value_alongs, value_dimensions...)...)
 end
 
-function Base.showarg(io::IO, ::Slices{T,N}, toplevel) where {T,N}
-    print(io, "Slices{", basetype(T), "{", eltype(T), ", ", ndims(T), "}, ", N, "}")
+function Base.showarg(io::IO, ::Slices{Item,Dimensions}, toplevel) where {Item,Dimensions}
+    print(
+        io,
+        "Slices{",
+        basetype(Item),
+        "{",
+        eltype(Item),
+        ", ",
+        ndims(Item),
+        "}, ",
+        Dimensions,
+        "}",
+    )
 end
 
-# This is expected to be added to Julia (maybe under a different name)
+# This is used_dimensions to be added to Julia (maybe under a different name)
 # Follow https://github.com/JuliaLang/julia/issues/35543 for progress
-basetype(T::Type) = Base.typename(T).wrapper
-basetype(T) = basetype(typeof(T))
+basetype(Item::Type) = Base.typename(Item).wrapper
+basetype(Item) = basetype(typeof(Item))
+
+Int(::True) = 1
+Int(::False) = 0
+
+function check_dimensions(has_dimensions, used_dimensions::Int)
+    if used_dimensions !== has_dimensions
+        throw(
+            DimensionMismatch(
+                "$used_dimensions of $has_dimensions inner dimensions are used",
+            ),
+        )
+    end
+end
+
+function check_dimensions(has_dimensions, ::Vararg{Int,Dimensions}) where {Dimensions}
+    check_dimensions(has_dimensions, Dimensions)
+end
+
+function check_dimensions(has_dimensions, alongs::Vararg{TypedBool})
+    check_dimensions(has_dimensions, mapreduce(Int, +, alongs))
+end
+
+function check_sizes(slices, alongs...)
+    if !isempty(slices)
+        first_slice = first(slices)
+        first_axes = axes(first_slice)
+        check_dimensions(ndims(first_slice), alongs...)
+        for slice in slices
+            if axes(slice) != first_axes
+                throw(
+                    ArgumentError(
+                        "Axes of $slice does not match the axes of the first slice: $first_axes",
+                    ),
+                )
+            end
+        end
+    end
+end
 
 ###
 # Align
@@ -174,37 +264,36 @@ basetype(T) = basetype(typeof(T))
 struct Align{Item,Dimensions,Sliced,Alongs} <: AbstractArray{Item,Dimensions}
     slices::Sliced
     alongs::Alongs
-    function Align{T,N,S,A}(slices::S, alongs::A) where {T,N,S,A}
-        # TODO: run eager size check without introducing much overheads
-        # sz = @inbounds size(first(slices))
-        # all(x->sz==size(x), slices) || throw(ArgumentError("All sizes of slices should be the same."))
-        # length(alongs) == N || throw(DimensionMismatch("The total dimension $(N) is expected to be the sum of inner dimension $(length(sz)) and outer dimension $(length(alongs))"))
-        # inner_dimensions = mapreduce(isequal(True()), +, alongs)
-        # inner_dimensions == ndims(first(slices)) || throw(DimensionMismatch("Only $inner_dimensions inner dimensions are used, expected $(ndims(first(slices))) dimensions."))
-        new{T,N,S,A}(slices, alongs)
-    end
 end
-@inline Align{Item,Dimensions}(
-    slices::Sliced,
-    alongs::Alongs,
-) where {Item,Dimensions,Sliced,Alongs} =
-    Align{Item,Dimensions,Sliced,Alongs}(slices, alongs)
 
-@inline axes(aligned::Align) = setindex_unrolled(
+function Align{Item,Dimensions}(
+    slices::Sliced,
+    alongs::NTuple{Dimensions,TypedBool},
+) where {Item,Dimensions,Sliced}
+    Align{Item,Dimensions,Sliced,typeof(alongs)}(slices, alongs)
+end
+
+axes(aligned::Align) = setindex_unrolled(
     setindex_unrolled(aligned.alongs, axes(aligned.slices), map(not, aligned.alongs)),
     axes(first(aligned.slices)),
     aligned.alongs,
 )
-@inline size(aligned::Align) = map(length, axes(aligned))
+size(aligned::Align) = map(length, axes(aligned))
 
-@inline split_indices(aligned, indices) =
-    getindex_unrolled(indices, map(not, aligned.alongs)),
-    getindex_unrolled(indices, aligned.alongs)
-@inline function getindex(aligned::Align{T,N}, indices::Vararg{Int,N}) where {T,N}
+split_indices(aligned, indices) = getindex_unrolled(indices, map(not, aligned.alongs)),
+getindex_unrolled(indices, aligned.alongs)
+function getindex(
+    aligned::Align{Item,Dimensions},
+    indices::Vararg{Int,Dimensions},
+) where {Item,Dimensions}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...]
 end
-@inline function setindex!(aligned::Align{T,N}, value, indices::Vararg{Int,N}) where {T,N}
+function setindex!(
+    aligned::Align{Item,Dimensions},
+    value,
+    indices::Vararg{Int,Dimensions},
+) where {Item,Dimensions}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...] = value
 end
@@ -216,7 +305,7 @@ end
 
 `alongs`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays. Inverse of [`Slices`](@ref).
 
-```jldoctest
+```jldoctest align_bools
 julia> using JuliennedArrays
 
 julia> slices = [[1, 2], [3, 4]];
@@ -236,19 +325,37 @@ julia> slices
  [0, 2]
  [3, 4]
 ```
+
+Will throw an error if you try to align slices with different axes.
+Use `@inbounds` to skip this check.
+
+```jldoctest align_bools
+julia> unequal = [[1], [1, 2]];
+
+julia> Align(unequal, False(), True())
+ERROR: ArgumentError: Axes of [1, 2] does not match the axes of the first slice: (Base.OneTo(1),)
+[...]
+
+julia> (array -> @inbounds Align(array, False(), True()))(unequal) # broken
+2×1 Align{Int64, 2} with eltype Int64:
+ 1
+ 1
+```
 """
-@inline Align(
+function Align(
     slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
     alongs::TypedBool...,
-) where {Item,InnerDimensions,OuterDimensions} =
+) where {Item,InnerDimensions,OuterDimensions}
+    @boundscheck check_sizes(slices, alongs...)
     Align{Item,OuterDimensions + InnerDimensions}(slices, alongs)
+end
 
 """
-    Along(slices, alongs::Int...)
+    Align(slices, alongs::Int...)
 
 Alternative syntax: `alongs` is which dimensions will be taken up by the inner arrays.
 
-```jldoctest
+```jldoctest align_ints
 julia> using JuliennedArrays
 
 julia> input = reshape(1:8, 2, 2, 2)
@@ -276,21 +383,42 @@ julia> Align(slices, 1, 3)
  5  7
  6  8
 ```
+
+You must include one `along` for each inner dimension.
+
+```jldoctest align_ints
+julia> Align(slices, 1)
+ERROR: DimensionMismatch("1 of 2 inner dimensions are used")
+[...]e
+```
+
+Julia can infer the result if `alongs` is constant.
+
+```jldoctest align_ints
+julia> using Test: @inferred
+
+julia> align_1_3(x) = Align(x, 1, 3);
+
+julia> @inferred align_1_3(slices) # broken
+```
 """
-Align(
+function Align(
     slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
     alongs::Int...,
-) where {Item,InnerDimensions,OuterDimensions} = Align(
-    slices,
-    in_unrolled(
-        as_vals(alongs...),
-        ntuple(Val, InnerDimensions + OuterDimensions)...,
-    )...,
-)
+) where {Item,InnerDimensions,OuterDimensions}
+    @boundscheck check_sizes(slices, alongs...)
+    Align(
+        slices,
+        in_unrolled(
+            as_vals(alongs...),
+            ntuple(Val, InnerDimensions + OuterDimensions)...,
+        )...,
+    )
+end
 
-function Base.showarg(io::IO, ::Align{T,N}, toplevel) where {T,N}
-    print(io, "Align{", T, ", ", N, "}")
-    toplevel && print(io, " with eltype ", T)
+function Base.showarg(io::IO, ::Align{Item,Dimensions}, toplevel) where {Item,Dimensions}
+    print(io, "Align{", Item, ", ", Dimensions, "}")
+    toplevel && print(io, " with eltype ", Item)
 end
 
 end # module
