@@ -99,13 +99,13 @@ end
 function slice_index(slices, indices)
     setindex_unrolled(axes(slices.whole), indices, map(not, slices.alongs))
 end
-function getindex(
+@inline function getindex(
     slices::Slices{Item,Dimensions},
     indices::Vararg{Int,Dimensions},
 ) where {Item,Dimensions}
     view(slices.whole, slice_index(slices, indices)...)
 end
-function setindex!(
+@inline function setindex!(
     slices::Slices{Item,Dimensions},
     value,
     indices::Vararg{Int,Dimensions},
@@ -339,14 +339,14 @@ function split_indices(aligned, indices)
     getindex_unrolled(indices, map(not, aligned.alongs)),
     getindex_unrolled(indices, aligned.alongs)
 end
-function getindex(
+@inline function getindex(
     aligned::Align{Item,Dimensions},
     indices::Vararg{Int,Dimensions},
 ) where {Item,Dimensions}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...]
 end
-function setindex!(
+@inline function setindex!(
     aligned::Align{Item,Dimensions},
     value,
     indices::Vararg{Int,Dimensions},
