@@ -113,7 +113,7 @@ function setindex!(
     slices.whole[slice_index(slices, indices)...] = value
 end
 
-function axis_or_1(switch, axis)
+@inline function axis_or_1(switch, axis)
     if untyped(switch)
         axis
     else
