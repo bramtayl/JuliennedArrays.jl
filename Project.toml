@@ -2,7 +2,7 @@ name = "JuliennedArrays"
 uuid = "5cadff95-7770-533d-a838-a1bf817ee6e0"
 authors = ["Brandon Taylor <brandon.taylor221@gmail.com>"]
 repo = "https://github.com/bramtayl/JuliennedArrays.jl.git"
-version = "0.2.2"
+version = "0.2.3"
 
 [compat]
 julia = "1"
