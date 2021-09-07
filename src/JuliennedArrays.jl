@@ -99,13 +99,13 @@ end
 function slice_index(slices, indices)
     setindex_unrolled(axes(slices.whole), indices, map(not, slices.alongs))
 end
-@inline function getindex(
+@inline @propagate_inbounds function getindex(
     slices::Slices{Item,Dimensions},
     indices::Vararg{Int,Dimensions},
 ) where {Item,Dimensions}
     view(slices.whole, slice_index(slices, indices)...)
 end
-@inline function setindex!(
+@inline @propagate_inbounds function setindex!(
     slices::Slices{Item,Dimensions},
     value,
     indices::Vararg{Int,Dimensions},
@@ -113,7 +113,7 @@ end
     slices.whole[slice_index(slices, indices)...] = value
 end
 
-@inline function axis_or_1(switch, axis)
+function axis_or_1(switch, axis)
     if untyped(switch)
         axis
     else
@@ -339,14 +339,14 @@ function split_indices(aligned, indices)
     getindex_unrolled(indices, map(not, aligned.alongs)),
     getindex_unrolled(indices, aligned.alongs)
 end
-@inline function getindex(
+@inline @propagate_inbounds function getindex(
     aligned::Align{Item,Dimensions},
     indices::Vararg{Int,Dimensions},
 ) where {Item,Dimensions}
     outer, inner = split_indices(aligned, indices)
     aligned.slices[outer...][inner...]
 end
-@inline function setindex!(
+@inline @propagate_inbounds function setindex!(
     aligned::Align{Item,Dimensions},
     value,
     indices::Vararg{Int,Dimensions},
@@ -394,7 +394,7 @@ ERROR: ArgumentError: Axes of [1, 2] does not match the axes of the first slice:
 [...]
 ```
 """
-function Align(
+@inline @propagate_inbounds function Align(
     slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
     alongs::TypedBool...,
 ) where {Item,InnerDimensions,OuterDimensions}
@@ -462,7 +462,7 @@ julia> @inferred align_1_3(slices)
  6  8 
 ```
 """
-@inline function Align(
+@inline @propagate_inbounds function Align(
     slices::AbstractArray{<:AbstractArray{Item,InnerDimensions},OuterDimensions},
     alongs::Int...,
 ) where {Item,InnerDimensions,OuterDimensions}
