@@ -274,7 +274,7 @@ end
     0
 end
 
-function check_dimensions(has_dimensions, used_dimensions::Int)
+function match_dimensions(has_dimensions, used_dimensions::Int)
     if used_dimensions !== has_dimensions
         throw(
             DimensionMismatch(
@@ -285,11 +285,11 @@ function check_dimensions(has_dimensions, used_dimensions::Int)
 end
 
 function check_dimensions(has_dimensions, ::Vararg{Int,Dimensions}) where {Dimensions}
-    check_dimensions(has_dimensions, Dimensions)
+    match_dimensions(has_dimensions, Dimensions)
 end
 
 function check_dimensions(has_dimensions, alongs::Vararg{TypedBool})
-    check_dimensions(has_dimensions, mapreduce(Int, +, alongs))
+    match_dimensions(has_dimensions, mapreduce(Int, +, alongs))
 end
 
 function check_sizes(slices, alongs...)

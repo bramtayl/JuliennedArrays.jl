@@ -26,6 +26,8 @@ end
 
         @test_throws DimensionMismatch Align([rand(2, 3) for _ in 1:4], 1)
         @test_throws MethodError Align(ones(2, 3, 4), 1, 2, 3)
+
+        @test size(Align(Slices(Slices(randn(3, 4, 5, 2), 3), 3), 3)) == (3, 4, 2)
     end
 
     @testset "Slice" begin
