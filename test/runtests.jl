@@ -2,13 +2,9 @@ using JuliennedArrays
 using Test
 using Documenter: doctest
 
-if VERSION >= v"1.6"
-    doctest(JuliennedArrays)
-end
-
 @testset "JuliennedArrays.jl" begin
     @testset "Align" begin
-        Xs = [rand(2, 3) for _ = 1:4]
+        Xs = [rand(2, 3) for _ in 1:4]
         X = @inferred Align(Xs, True(), False(), True())
         @test size(X) == (2, 4, 3)
         @test permutedims(cat(Xs...; dims = 3), (1, 3, 2)) == X
@@ -24,7 +20,10 @@ end
         align_1_3(x) = Align(x, 1, 3)
         @inferred align_1_3(Xs)
 
-        @test_throws DimensionMismatch Align([rand(2, 3) for _ in 1:4], 1)
+        @test_throws ArgumentError("(1,) is not of length inner dimensions (2).") Align(
+            [rand(2, 3) for _ in 1:4],
+            1,
+        )
         @test_throws MethodError Align(ones(2, 3, 4), 1, 2, 3)
 
         @test size(Align(Slices(Slices(randn(3, 4, 5, 2), 3), 3), 3)) == (3, 4, 2)
@@ -56,6 +55,18 @@ end
         X = rand(2, 3, 4, 5)
         @test_throws MethodError Slices(X, True())
         @test_throws MethodError Slices(X, True(), False(), False(), False(), False())
-        @test_throws ArgumentError("All alongs values (5,) should be less than or equal to 4") Slices(X, 5)
+        @test_throws ArgumentError(
+            "5, a dimension number, is out of bounds or out of order.",
+        ) Slices(X, 5)
+
+        empties = [rand(3) for _ in 1:0]
+        @test_throws BoundsError(Vector{Float64}[], (1,)) Align(empties, True(), False())
+        @test size(Align(empties, True(), False(); slice_axes = axes(rand(3)))) == (3, 0)
+        @test_throws BoundsError(Vector{Float64}[], (1,)) Align(empties, 1)
+        @test size(Align(empties, 1; slice_axes = axes(rand(3)))) == (3, 0)
     end
+end
+
+if VERSION >= v"1.6"
+    doctest(JuliennedArrays)
 end
