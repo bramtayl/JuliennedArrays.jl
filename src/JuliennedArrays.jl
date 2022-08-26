@@ -66,7 +66,7 @@ function find_in_skip(alongs, dimensions)
 end
 
 function find_in_check(
-    ::Val{along},
+    first_along::Val{along},
     ::Val{dimension},
     alongs,
     dimensions,
@@ -226,6 +226,7 @@ julia> map(sum, s)
 ```
 
 No along should be greater than the number of dimensions of `whole`.
+`alongs` should also be strictly increasing.
 
 ```jldoctest slices_ints
 julia> Slices(input, 4)
@@ -330,7 +331,8 @@ end
 
 `Align` an array of arrays, all with the same size.
 
-`alongs`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays. Inverse of [`Slices`](@ref).
+`alongs`, made of [`True`](@ref) and [`False`](@ref) objects, shows which dimensions will be taken up by the inner arrays.
+Inverse of [`Slices`](@ref).
 
 ```jldoctest align_bools
 julia> using JuliennedArrays
@@ -424,6 +426,7 @@ julia> Align(slices, 1, 3)
 ```
 
 You must include one `along` for each inner dimension.
+`alongs` should also be strictly increasing.
 
 ```jldoctest align_ints
 julia> Align(slices, 1)

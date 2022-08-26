@@ -58,6 +58,7 @@ using Documenter: doctest
         @test_throws ArgumentError(
             "5, a dimension number, is out of bounds or out of order.",
         ) Slices(X, 5)
+        @test_throws ArgumentError("-1, a dimension number, is out of bounds or out of order.") Slices(X, -1)
 
         empties = [rand(3) for _ in 1:0]
         @test_throws BoundsError(Vector{Float64}[], (1,)) Align(empties, True(), False())
